@@ -147,7 +147,7 @@ function leererAntrag() {
     besucheraufkommen: "",
     aufbau: { datum: "", beginn: "", ende: "" },
     abbau: { datum: "", beginn: "", ende: "" },
-    zahlen: {},
+    zahlen: Object.assign({}, ANTRAG_VORBELEGUNG.zahlen),
     eintrittsgeld: ANTRAG_VORBELEGUNG.eintrittsgeld,
     technPersonal: ANTRAG_VORBELEGUNG.technPersonal,
     unterstuetzung: Object.assign({}, ANTRAG_VORBELEGUNG.unterstuetzung),
@@ -190,7 +190,7 @@ function normalizeData(raw) {
     n.veranstaltung = Object.assign({ datum: "", einlass: "", beginn: "", ende: "" }, a.veranstaltung);
     n.aufbau = Object.assign({ datum: "", beginn: "", ende: "" }, a.aufbau);
     n.abbau = Object.assign({ datum: "", beginn: "", ende: "" }, a.abbau);
-    n.zahlen = Object.assign({}, a.zahlen);
+    n.zahlen = Object.assign({}, ANTRAG_VORBELEGUNG.zahlen, a.zahlen);
     // Vorbelegung zuerst, bereits gesetzte Häkchen gewinnen: ein nie
     // angefasster Abschnitt bekommt den Standard, eine bewusste Abwahl bleibt.
     n.unterstuetzung = Object.assign({}, ANTRAG_VORBELEGUNG.unterstuetzung, a.unterstuetzung);

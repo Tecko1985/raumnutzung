@@ -11,6 +11,7 @@ const APP_CHANGELOG = [
           "Teilnehmerzahlen werden automatisch summiert; die Summe muss niemand mehr von Hand addieren.",
           "Ein neuer Antrag ist bereits so vorbelegt wie das zuletzt eingereichte Formular: Beheizung und Bewirtung auf Ja, Schließdienst, Objekteinweisung, Objektabnahme, Abbau und Reinigung angehakt, alles Übrige auf Nein. Abweichungen hakt man einzeln um.",
           "Auch die wiederkehrenden Texte stehen schon drin — das Speisen- und Getränkeangebot, die Aufgaben des Hausmeisters und die Banner-Werbung der Sponsoren. Was nicht passt, wird überschrieben.",
+          "Bei den Besuchern sind je 125 ortskundige und ortsfremde vorgetragen, der übliche Erfahrungswert. Die Summe rechnet die App mit.",
           "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten — Eingaben werden laufend automatisch gesichert.",
           "Anmeldung & Speicherung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort auf diesem Gerät nötig."
         ]
@@ -58,6 +59,13 @@ const ANTRAG_VORBELEGUNG = {
   technPersonal: false,
   beheizung: true,
   speisen: true,
+  // Erfahrungswert für eine Hallenveranstaltung des Vereins. Die übrigen
+  // Zahlen (Mitwirkende, Ordnungskräfte, Sanitätsdienst …) hängen an der
+  // konkreten Veranstaltung und bleiben leer. Die Summe rechnet die App.
+  zahlen: {
+    ortskundige: "125",
+    ortsfremde: "125"
+  },
   unterstuetzung: {
     aufbauBestuhlung: false,
     schliessdienstVor: true,
