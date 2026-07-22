@@ -89,11 +89,14 @@ function neueId() {
 // Vorbelegung für „Ort, Datum“. Zweistellig mit führender Null — toLocale-
 // DateString("de-DE") liefert „22.7.2026“, und so schreibt man kein Datum auf
 // ein Amtsformular.
+function kurzDatum(wert) {
+  const d = wert ? new Date(wert) : new Date();
+  if (isNaN(d.getTime())) return "";
+  return d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 function heuteOrtDatum() {
-  const d = new Date().toLocaleDateString("de-DE", {
-    day: "2-digit", month: "2-digit", year: "numeric"
-  });
-  return "Heilbad Heiligenstadt, " + d;
+  return "Heilbad Heiligenstadt, " + kurzDatum();
 }
 
 function datumAnzeige(iso) {
@@ -330,7 +333,7 @@ function fuelleFormular(a) {
   pill.textContent = STATUS_LABELS[a.status] || a.status;
   pill.className = "status-pill status-" + a.status;
   el("antrag-meta").textContent =
-    "Angelegt am " + new Date(a.erstelltAm).toLocaleDateString("de-DE")
+    "Angelegt am " + kurzDatum(a.erstelltAm)
     + (a.erstelltVon ? " von " + a.erstelltVon : "");
 
   const setV = (id, v) => { const e = el(id); if (e) e.value = v === null || v === undefined ? "" : v; };
@@ -622,7 +625,7 @@ function setUnterschriftStatus(a) {
   if (!s) return;
   if (a.unterschrift || a.unterschriftFileId) {
     s.textContent = a.unterschriebenAm
-      ? "Unterschrieben am " + new Date(a.unterschriebenAm).toLocaleDateString("de-DE")
+      ? "Unterschrieben am " + kurzDatum(a.unterschriebenAm)
       : "Unterschrift vorhanden";
     s.className = "save-hint";
   } else {
