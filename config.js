@@ -9,6 +9,7 @@ const APP_CHANGELOG = [
         items: [
           "Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld wird komplett digital erfasst — alle neun Abschnitte vom Veranstaltungsort bis zu den Bühnenflächen.",
           "Teilnehmerzahlen werden automatisch summiert; die Summe muss niemand mehr von Hand addieren.",
+          "Alle Ja/Nein-Fragen stehen von vornherein auf „Nein“ — das Formular verlangt in jeder Zeile ein Kreuz, und der Normalfall einer Hallenveranstaltung ist überall Nein. Abweichungen wie Beheizung oder Bewirtung hakt man einzeln um.",
           "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten — Eingaben werden laufend automatisch gesichert.",
           "Anmeldung & Speicherung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort auf diesem Gerät nötig."
         ]

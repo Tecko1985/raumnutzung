@@ -106,6 +106,18 @@ function fuelleJaNeinSelects(root) {
 // ---------------------------------------------------------------------------
 // Datenschema
 // ---------------------------------------------------------------------------
+// Alle Ja/Nein-Fragen eines neuen Antrags stehen auf „Nein“, nicht auf „keine
+// Angabe“. Das Formular verlangt in jeder Zeile ein Kreuz — ein leeres
+// Kästchenpaar sieht beim Amt nach „vergessen“ aus. Der Normalfall einer
+// Hallenveranstaltung ist überall Nein; die wenigen Ausnahmen (Beheizung,
+// Bewirtung) hakt man einzeln um. „Keine Angabe“ bleibt als Wert möglich, ist
+// aber nichts, wo man versehentlich landet.
+function buehneVorbelegung() {
+  const b = {};
+  BUEHNE_FELDER.forEach((f) => { b[f.key] = false; });
+  return b;
+}
+
 function leererAntrag() {
   return {
     id: neueId(),
@@ -122,16 +134,16 @@ function leererAntrag() {
     aufbau: { datum: "", beginn: "", ende: "" },
     abbau: { datum: "", beginn: "", ende: "" },
     zahlen: {},
-    eintrittsgeld: null,
-    technPersonal: null,
+    eintrittsgeld: false,
+    technPersonal: false,
     unterstuetzung: {},
     unterstuetzungAufgaben: "",
     sonstigesText: "",
-    beheizung: null,
+    beheizung: false,
     heizBemerkungen: "",
-    speisen: null,
+    speisen: false,
     speisenText: "",
-    buehne: {},
+    buehne: buehneVorbelegung(),
     ortDatum: ""
   };
 }
@@ -157,7 +169,16 @@ function normalizeData(raw) {
     n.abbau = Object.assign({ datum: "", beginn: "", ende: "" }, a.abbau);
     n.zahlen = Object.assign({}, a.zahlen);
     n.unterstuetzung = Object.assign({}, a.unterstuetzung);
-    n.buehne = Object.assign({}, a.buehne);
+    // Bühne: Vorbelegung zuerst, damit nie beantwortete Fragen den Standard
+    // „Nein“ bekommen und nicht als „keine Angabe“ im Antrag ans Amt gehen.
+    // Bereits gesetzte Antworten überschreiben sie.
+    n.buehne = Object.assign(buehneVorbelegung(), a.buehne);
+    // Einmalige Angleichung an den Standard „Nein“: Anträge aus der ersten
+    // Fassung tragen hier ein explizites null, das damals der Vorgabewert war
+    // und keine bewusste Antwort ist.
+    ["eintrittsgeld", "technPersonal", "beheizung", "speisen"].forEach((k) => {
+      if (n[k] === null || n[k] === undefined) n[k] = false;
+    });
     if (!STATUS_LABELS[n.status]) n.status = "entwurf";
     return n;
   });
