@@ -1,0 +1,239 @@
+const APP_VERSION = "1.0";
+
+const APP_CHANGELOG = [
+  {
+    version: "1.0",
+    groups: [
+      {
+        title: "Antrag erfassen",
+        items: [
+          "Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld wird komplett digital erfasst — alle neun Abschnitte vom Veranstaltungsort bis zu den Bühnenflächen.",
+          "Teilnehmerzahlen werden automatisch summiert; die Summe muss niemand mehr von Hand addieren.",
+          "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten — Eingaben werden laufend automatisch gesichert.",
+          "Anmeldung & Speicherung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort auf diesem Gerät nötig."
+        ]
+      },
+      {
+        title: "Amtliches PDF erzeugen",
+        items: [
+          "Aus jedem Antrag entsteht auf Knopfdruck das ausgefüllte Original-Formular des Landkreises als PDF — genau das Blatt, das das Liegenschaftsamt erwartet.",
+          "Unterschriftsfelder bleiben bewusst leer: Das PDF wird ausgedruckt und vom Veranstaltungsleiter unterschrieben.",
+          "Das erzeugte PDF lässt sich in jedem PDF-Programm nachbearbeiten, falls das Amt Rückfragen hat."
+        ]
+      },
+      {
+        title: "Übersicht & Status",
+        items: [
+          "Alle Anträge in einer Liste, sortiert nach Veranstaltungsdatum, mit Status Entwurf/Eingereicht/Genehmigt/Abgelehnt.",
+          "Kopieren eines bestehenden Antrags als Vorlage — wiederkehrende Veranstaltungen müssen nicht neu erfasst werden.",
+          "Sichtbarkeit auf die Bearbeiter-Gruppe beschränkt, weil das Formular private Anschriften und Telefonnummern enthält."
+        ]
+      }
+    ]
+  }
+];
+
+// Auswahl für das Feld „Veranstaltungsort“. Freitext bleibt möglich.
+const ORTE = [
+  "Lorenz-Kellner-Halle",
+  "Sporthalle Aegidienstraße",
+  "Sportplatz Ernst-Thälmann-Straße",
+  "Sonstiger Ort (siehe Eintrag)"
+];
+
+const STATUS_LABELS = {
+  entwurf: "Entwurf",
+  eingereicht: "Eingereicht",
+  genehmigt: "Genehmigt",
+  abgelehnt: "Abgelehnt"
+};
+
+// ---------------------------------------------------------------------------
+// PDF-Feldmapping
+// ---------------------------------------------------------------------------
+// ACHTUNG, die wichtigste Eigenheit dieser App: Die AcroForm-Feldnamen im
+// Landkreis-Formular sind gegenüber ihrem Inhalt um EINE Beschriftung versetzt.
+// Wer das Formular gebaut hat, hat jedes Eingabefeld nach der Zeile benannt,
+// die DARUNTER steht, nicht nach der darüber. Beispiel:
+//
+//   Überschrift „1. Veranstaltungsort“
+//   [Eingabefeld]                    <- heißt 'Raum ggf Anz der Räume Außenanlage'
+//   Beschriftung „Raum /Außenanlage“
+//   [Eingabefeld]                    <- heißt '2 Bezeichnung der Veranstaltung ggf erläutern'
+//
+// Das Mapping unten ist deshalb NICHT nach Feldnamen geraten, sondern am
+// 2026-07-22 über die Widget-Koordinaten (/Rect je Seite) gegen das gerenderte
+// Layout verifiziert. Wer hier etwas ändert, muss das genauso tun — sonst
+// gehen verschobene Anträge ans Amt.
+const PDF_FELDER = {
+  // --- 1 bis 3 (Seite 1) ---
+  veranstaltungsort: "Raum ggf Anz der Räume Außenanlage",
+  raeume:            "2 Bezeichnung der Veranstaltung ggf erläutern",
+  bezeichnung:       "3 Veranstalterin oder Verein",
+  veranstalter:      "Veranstaltungsleiterin",
+
+  // --- Veranstaltungsleiter (links) / Vertreter (rechts) ---
+  leiterName:        "Name Vorname",
+  leiterAnschrift:   ["Anschrift privat", "1", "2"],
+  leiterTelefon:     "Tel mobil",
+  leiterEmail:       "EMail",
+  vertreterName:      "Name Vorname_2",
+  vertreterAnschrift: ["Anschrift privat_2", "1_2", "2_2"],
+  vertreterTelefon:   "Tel mobil_2",
+  vertreterEmail:     "EMail_2",
+
+  // --- 4 Ablaufplan ---
+  vaDatum:   "Datum",
+  vaEinlass: "Einlass",
+  vaBeginn:  "Beginn",
+  vaEnde:    "Ende",
+  aufbauDatum:  "Datum_2",
+  aufbauBeginn: "Beginn_2",
+  aufbauEnde:   "Ende_2",
+  abbauDatum:  "Datum_3",
+  abbauBeginn: "Beginn_3",
+  abbauEnde:   "Ende_3",
+
+  // --- 5 Teilnehmerzahlen (Seite 2, rechte Spalte) ---
+  zMitwirkende:     "1_3",
+  zOrtskundige:     "2_3",
+  zOrtsfremde:      "3",
+  zZielgruppe:      "4",
+  zOrdnungskraefte: "1_4",
+  zSanitaet:        "2_4",
+  zBrandwache:      "3_2",
+  zTechnik:         "4_2",
+  zBewirtung:       "5",
+  zSumme:           "6",
+  zSchutzbeduerftig: "Nein",
+
+  // --- 6 Unterstützung durch technisches Personal ---
+  untAufgaben:  ["werden 1", "werden 2"],
+  untSonstiges: ["Sonstiges bspw Räumund Streudienst 1", "Sonstiges bspw Räumund Streudienst 2"],
+
+  // --- 7 Beheizung ---
+  heizBemerkungen: [
+    "Bemerkungen Heizzeit Abweichung von Standardtemperatur usw 1",
+    "Bemerkungen Heizzeit Abweichung von Standardtemperatur usw 2"
+  ],
+
+  // --- 8 Speisen und Getränke (Seite 3) ---
+  speisenText: [
+    "Wenn ja welche Speisen und Getränke werden verkauft bzw ausgegeben 1",
+    "Wenn ja welche Speisen und Getränke werden verkauft bzw ausgegeben 2",
+    "Wenn ja welche Speisen und Getränke werden verkauft bzw ausgegeben 3"
+  ],
+
+  // --- 9 Bühnen- und Besucherflächen (Seite 4) ---
+  // Auch hier greift der Namensversatz: 'Einsatz externer Scheinwerfer' ist in
+  // Wahrheit das Feld „Grundfläche“, 'Bühnendekoration' das Feld „Anzahl“.
+  bGrundflaeche:        "Einsatz externer Scheinwerfer",
+  bHoehe:               "Höhe",
+  bScheinwerferAnzahl:  "Bühnendekoration",
+  bDekorationText: [
+    "Beschreibung der Bühnendekoration falls erforderlich weitere Blätter hinzufügen 1",
+    "Beschreibung der Bühnendekoration falls erforderlich weitere Blätter hinzufügen 2",
+    "Beschreibung der Bühnendekoration falls erforderlich weitere Blätter hinzufügen 3"
+  ],
+  bTontechnikArt:       ["Art", "Saaldekoration"],
+  bSaaldekorationText:  ["Welche", "sonstige Einrichtungen undoder Aufbauten"],
+  bSonstigeAufbautenText: [
+    "Welche_2",
+    "Diese Checkliste darf nur vom Veranstaltungsleiter ausgefüllt und unterschrieben werden"
+  ],
+
+  // --- Unterschriftenblock ---
+  ortDatum: "Ort Datum"
+  // 'Ort Datum_2' bleibt leer: das ist die Zeile der Schulleitung, die
+  // unterschreibt auf dem ausgedruckten Blatt selbst.
+};
+
+// Ja/Nein-Paare: [Feldname für Ja, Feldname für Nein].
+// true -> Ja ankreuzen, false -> Nein ankreuzen, null -> beide leer lassen.
+const PDF_JA_NEIN = {
+  eintrittsgeld:  ["Kontrollkästchen01", "Kontrollkästchen02"],
+  technPersonal:  ["Kontrollkästchen03", "Kontrollkästchen04"],
+  beheizung:      ["Kontrollkästchen13", "Kontrollkästchen14"],
+  speisen:        ["Kontrollkästchen15", "Kontrollkästchen16"],
+  bGenutzt:       ["Kontrollkästchen17", "Kontrollkästchen18"],
+  bEigene:        ["Kontrollkästchen19", "Kontrollkästchen20"],
+  bUmgestaltung:  ["Kontrollkästchen21", "Kontrollkästchen22"],
+  bPodesterie:    ["Kontrollkästchen23", "Kontrollkästchen24"],
+  bZusatzelemente: ["Kontrollkästchen25", "Kontrollkästchen26"],
+  bScheinwerfer:  ["Kontrollkästchen27", "Kontrollkästchen28"],
+  bDekoration:    ["Kontrollkästchen29", "Kontrollkästchen30"],
+  bTontechnik:    ["Kontrollkästchen31", "Kontrollkästchen32"],
+  bSaaldekoration: ["Kontrollkästchen33", "Kontrollkästchen34"],
+  bSonstigeAufbauten: ["Kontrollkästchen35", "Kontrollkästchen36"]
+};
+
+// Einfache Ankreuz-Kästchen ohne Gegenstück (Abschnitt 6).
+const PDF_HAKEN = {
+  aufbauBestuhlung:     "Kontrollkästchen05",
+  schliessdienstVor:    "Kontrollkästchen06",
+  objekteinweisung:     "Kontrollkästchen07",
+  waehrendVeranstaltung: "Kontrollkästchen08",
+  objektabnahme:        "Kontrollkästchen09",
+  abbauAusraeumen:      "Kontrollkästchen10",
+  reinigung:            "Kontrollkästchen11",
+  sonstiges:            "Kontrollkästchen12"
+};
+
+// Abschnitt 5, in der Reihenfolge des Formulars. „zahl“ wird summiert und als
+// Zahlenfeld angezeigt, „text“ nicht — „Zielgruppe/Alter“ ist eine Beschreibung
+// („Kinder 8–14“), keine Anzahl.
+const ZAHLEN_FELDER = [
+  ["mitwirkende", "Anzahl der Mitwirkenden (Darsteller, Chor, Sportler usw.)", "zahl"],
+  ["ortskundige", "Ortskundige Besucher", "zahl"],
+  ["ortsfremde", "Ortsfremde Besucher", "zahl"],
+  ["zielgruppe", "Zielgruppe/Alter", "text"],
+  ["ordnungskraefte", "Ordnungskräfte", "zahl"],
+  ["sanitaet", "Sanitäts- und Rettungsdienste", "zahl"],
+  ["brandwache", "Brandsicherheitswache", "zahl"],
+  ["technik", "Technisches Personal", "zahl"],
+  ["bewirtung", "Personal zur Bewirtung", "zahl"],
+  ["schutzbeduerftig", "davon besonders schutzbedürftige Personen", "text"]
+];
+
+// Abschnitt 9. `text` sind einzeilige Zusatzfelder, `area` ein mehrzeiliges —
+// beide gehören im Formular unter die jeweilige Ja/Nein-Frage.
+const BUEHNE_FELDER = [
+  { key: "genutzt", label: "Wird die Szenefläche/Bühne genutzt?" },
+  { key: "eigene", label: "Nutzung der eigenen Bühne" },
+  { key: "umgestaltung", label: "Umfangreiche Umgestaltung der Bühne/Szenefläche" },
+  { key: "podesterie", label: "Podesterie" },
+  { key: "zusatzelemente", label: "Einsatz zusätzlicher Bühnenelemente",
+    text: [["grundflaeche", "Grundfläche"], ["hoehe", "Höhe"]] },
+  { key: "scheinwerfer", label: "Einsatz externer Scheinwerfer",
+    text: [["scheinwerferAnzahl", "Anzahl"]] },
+  { key: "dekoration", label: "Bühnendekoration",
+    area: ["dekorationText", "Beschreibung der Bühnendekoration"] },
+  { key: "tontechnik", label: "Einsatz externer Tontechnik",
+    area: ["tontechnikArt", "Art"] },
+  { key: "saaldekoration", label: "Saaldekoration",
+    area: ["saaldekorationText", "Welche?"] },
+  { key: "sonstigeAufbauten", label: "Sonstige Einrichtungen und/oder Aufbauten",
+    area: ["sonstigeAufbautenText", "Welche?"] }
+];
+
+// Beschriftungen der Unterstützungs-Kästchen für die Oberfläche, in der
+// Reihenfolge, in der sie auch im Formular stehen.
+const UNTERSTUETZUNG_LABELS = [
+  ["aufbauBestuhlung", "Aufbau/Bestuhlung"],
+  ["schliessdienstVor", "Schließdienst vor Veranstaltungsbeginn"],
+  ["objekteinweisung", "Objekteinweisung"],
+  ["waehrendVeranstaltung", "Unterstützung während der Veranstaltung"],
+  ["objektabnahme", "Objektabnahme & Schließdienst nach der Veranstaltung"],
+  ["abbauAusraeumen", "Abbau/Ausräumen"],
+  ["reinigung", "Reinigung"],
+  ["sonstiges", "Sonstiges (bspw. Räum- und Streudienst)"]
+];
+
+// Das Feld „Bemerkung Besucheraufkommen“ hat im Original-PDF KEIN
+// Eingabefeld — die Zeile ist nur bedruckt. Der Text wird deshalb an diese
+// Stelle gezeichnet (Seite 1, Ursprung unten-links, Punkte).
+const PDF_BESUCHER_TEXT = { seite: 0, x: 240, y: 318, groesse: 8, maxZeichen: 60 };
+
+// Zeichen pro Zeile für die mehrzeiligen Freitextfelder (Feldbreite ~475pt
+// bei 10pt Schrift). Wird nur zum Umbrechen genutzt, nicht zum Abschneiden.
+const PDF_ZEILENLAENGE = 95;

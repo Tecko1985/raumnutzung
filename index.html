@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🏛️ Raumnutzung</title>
+<meta name="theme-color" content="#1a56a0" />
+<link rel="stylesheet" href="style.css?v=1.0" />
+</head>
+<body>
+
+<header>
+  <h1>🏛️ Raumnutzung <span class="version-badge version-badge-link" id="version-badge" role="button" tabindex="0" title="Versionshistorie ansehen"></span></h1>
+  <a href="https://tecko1985.github.io/ToolsUebersicht/" class="back-to-dashboard">← Zurück zum Dashboard</a>
+  <div class="header-right">
+    <span class="header-user" id="header-user"></span>
+    <img class="header-logo" src="logo.png" alt="1. SC 1911 e.V. Heilbad Heiligenstadt" />
+  </div>
+</header>
+
+<!-- Verbindungs-Screen -->
+<div class="connect-screen" id="connect-screen">
+  <div class="card" id="cloud-login-section">
+    <h2>Anmeldung erforderlich</h2>
+    <p class="muted">
+      Die Anträge liegen in der Vereins-Nextcloud. Melde dich einmalig in der
+      <strong>Tools-Übersicht</strong> an – danach wird diese Seite automatisch
+      geladen, ganz ohne Zugangsdaten oder App-Passwort auf diesem Gerät.
+    </p>
+    <div class="btn-row" style="justify-content:flex-start;">
+      <a class="btn" href="https://tecko1985.github.io/ToolsUebersicht/">Zur Tools-Übersicht &amp; anmelden</a>
+    </div>
+    <p class="muted" id="cloud-error" style="display:none; color:#c0392b; margin-top:12px;"></p>
+  </div>
+</div>
+
+<!-- App -->
+<div id="app-shell" style="display:none;">
+  <nav>
+    <button data-tab="uebersicht" class="active">Anträge</button>
+    <button data-tab="antrag" id="nav-antrag" style="display:none;">Antrag</button>
+    <div class="nav-right">
+      <button data-tab="info">Info</button>
+    </div>
+  </nav>
+  <main>
+
+    <!-- ---------- Übersicht ---------- -->
+    <section class="tab-section active" id="tab-uebersicht">
+      <div class="card">
+        <div class="card-header-row">
+          <h2>Anträge auf Raumnutzung</h2>
+          <select id="uebersicht-status-filter">
+            <option value="alle">Alle Status</option>
+            <option value="entwurf">Entwurf</option>
+            <option value="eingereicht">Eingereicht</option>
+            <option value="genehmigt">Genehmigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+        </div>
+        <p class="muted">
+          Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld.
+          Aus jedem Antrag lässt sich das ausgefüllte Original-PDF für das
+          Liegenschaftsamt erzeugen.
+        </p>
+        <div class="btn-row" style="justify-content:flex-start; margin-top:12px;">
+          <button type="button" class="btn success" id="btn-neuer-antrag">+ Neuer Antrag</button>
+        </div>
+        <div class="empty-state" id="uebersicht-empty" style="display:none;">Noch keine Anträge erfasst.</div>
+        <div id="uebersicht-rows"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Antrag bearbeiten ---------- -->
+    <section class="tab-section" id="tab-antrag">
+
+      <div class="card">
+        <div class="card-header-row">
+          <h2 id="antrag-titel">Antrag</h2>
+          <span class="status-pill" id="antrag-status-pill"></span>
+        </div>
+        <p class="muted" id="antrag-meta"></p>
+        <div class="btn-row" style="justify-content:flex-start; margin-top:10px; flex-wrap:wrap;">
+          <button type="button" class="btn secondary small" id="btn-zurueck">← Zur Übersicht</button>
+          <button type="button" class="btn small" id="btn-pdf">📄 Amtliches PDF erzeugen</button>
+          <span class="save-hint" id="save-hint"></span>
+        </div>
+      </div>
+
+      <!-- 1 bis 3 -->
+      <div class="card">
+        <h3>1.–3. Veranstaltung</h3>
+        <div class="form-field">
+          <label for="f-veranstaltungsort">Veranstaltungsort</label>
+          <input type="text" id="f-veranstaltungsort" list="orte-liste" placeholder="z.B. Lorenz-Kellner-Halle" />
+          <datalist id="orte-liste"></datalist>
+        </div>
+        <div class="form-field">
+          <label for="f-raeume">Raum (ggf. Anz. der Räume) / Außenanlage</label>
+          <input type="text" id="f-raeume" placeholder="z.B. Sporthalle und Foyer" />
+        </div>
+        <div class="form-field">
+          <label for="f-bezeichnung">Bezeichnung der Veranstaltung</label>
+          <input type="text" id="f-bezeichnung" placeholder="z.B. Nachwuchs-Fußballturnier" />
+        </div>
+        <div class="form-field">
+          <label for="f-veranstalter">Veranstalter/in oder Verein</label>
+          <input type="text" id="f-veranstalter" placeholder="1. SC 1911 Heiligenstadt e.V." />
+        </div>
+      </div>
+
+      <!-- Leiter / Vertreter -->
+      <div class="card">
+        <h3>Veranstaltungsleiter/in und Vertreter/in</h3>
+        <p class="muted">
+          Beide müssen während der Veranstaltung sowie bei Auf- und Abbau ständig
+          anwesend sein. Die Angaben gehen als Privatanschrift an das Amt.
+        </p>
+        <div class="two-col">
+          <div>
+            <h4>Veranstaltungsleiter/in</h4>
+            <div class="form-field">
+              <label for="f-leiter-name">Name, Vorname</label>
+              <input type="text" id="f-leiter-name" />
+            </div>
+            <div class="form-field">
+              <label>Anschrift (privat)</label>
+              <input type="text" id="f-leiter-anschrift-0" placeholder="Straße, Hausnummer" />
+              <input type="text" id="f-leiter-anschrift-1" placeholder="PLZ, Ort" style="margin-top:6px;" />
+              <input type="text" id="f-leiter-anschrift-2" placeholder="Zusatz (optional)" style="margin-top:6px;" />
+            </div>
+            <div class="form-field">
+              <label for="f-leiter-telefon">Tel. (mobil)</label>
+              <input type="tel" id="f-leiter-telefon" />
+            </div>
+            <div class="form-field">
+              <label for="f-leiter-email">E-Mail</label>
+              <input type="email" id="f-leiter-email" />
+            </div>
+          </div>
+          <div>
+            <h4>Vertreter/in</h4>
+            <div class="form-field">
+              <label for="f-vertreter-name">Name, Vorname</label>
+              <input type="text" id="f-vertreter-name" />
+            </div>
+            <div class="form-field">
+              <label>Anschrift (privat)</label>
+              <input type="text" id="f-vertreter-anschrift-0" placeholder="Straße, Hausnummer" />
+              <input type="text" id="f-vertreter-anschrift-1" placeholder="PLZ, Ort" style="margin-top:6px;" />
+              <input type="text" id="f-vertreter-anschrift-2" placeholder="Zusatz (optional)" style="margin-top:6px;" />
+            </div>
+            <div class="form-field">
+              <label for="f-vertreter-telefon">Tel. (mobil)</label>
+              <input type="tel" id="f-vertreter-telefon" />
+            </div>
+            <div class="form-field">
+              <label for="f-vertreter-email">E-Mail</label>
+              <input type="email" id="f-vertreter-email" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4 Ablaufplan -->
+      <div class="card">
+        <h3>4. Ablaufplan</h3>
+        <div class="plan-grid">
+          <div class="plan-label">Veranstaltung</div>
+          <div class="form-field"><label for="f-va-datum">Datum</label><input type="date" id="f-va-datum" /></div>
+          <div class="form-field"><label for="f-va-einlass">Einlass</label><input type="time" id="f-va-einlass" /></div>
+          <div class="form-field"><label for="f-va-beginn">Beginn</label><input type="time" id="f-va-beginn" /></div>
+          <div class="form-field"><label for="f-va-ende">Ende</label><input type="time" id="f-va-ende" /></div>
+
+          <div class="plan-label">Aufbau</div>
+          <div class="form-field"><label for="f-aufbau-datum">Datum</label><input type="date" id="f-aufbau-datum" /></div>
+          <div class="form-field"></div>
+          <div class="form-field"><label for="f-aufbau-beginn">Beginn</label><input type="time" id="f-aufbau-beginn" /></div>
+          <div class="form-field"><label for="f-aufbau-ende">Ende</label><input type="time" id="f-aufbau-ende" /></div>
+
+          <div class="plan-label">Abbau</div>
+          <div class="form-field"><label for="f-abbau-datum">Datum</label><input type="date" id="f-abbau-datum" /></div>
+          <div class="form-field"></div>
+          <div class="form-field"><label for="f-abbau-beginn">Beginn</label><input type="time" id="f-abbau-beginn" /></div>
+          <div class="form-field"><label for="f-abbau-ende">Ende</label><input type="time" id="f-abbau-ende" /></div>
+        </div>
+        <div class="form-field" style="margin-top:14px;">
+          <label for="f-besucheraufkommen">Bemerkung Besucheraufkommen</label>
+          <input type="text" id="f-besucheraufkommen" maxlength="60"
+                 placeholder="z.B. über den Zeitraum gleichbleibend" />
+          <span class="field-hint">
+            Im Original-Formular ist dafür nur eine schmale bedruckte Zeile ohne
+            Eingabefeld vorgesehen — deshalb höchstens 60 Zeichen.
+          </span>
+        </div>
+      </div>
+
+      <!-- 5 Teilnehmer -->
+      <div class="card">
+        <h3>5. Erwartete Teilnehmer</h3>
+        <div id="zahlen-grid" class="zahlen-grid"></div>
+        <div class="summe-row">
+          <span>Summe (vom Formular zusammengefasst)</span>
+          <strong id="zahlen-summe">–</strong>
+        </div>
+        <div class="form-field" style="margin-top:14px; max-width:260px;">
+          <label for="f-eintrittsgeld">Wird ein Eintrittsgeld erhoben?</label>
+          <select id="f-eintrittsgeld" class="ja-nein"></select>
+        </div>
+      </div>
+
+      <!-- 6 Technisches Personal -->
+      <div class="card">
+        <h3>6. Unterstützung durch technisches Personal</h3>
+        <div class="form-field" style="max-width:260px;">
+          <label for="f-techn-personal">Wird Unterstützung beantragt?</label>
+          <select id="f-techn-personal" class="ja-nein"></select>
+        </div>
+        <div id="unterstuetzung-block">
+          <p class="muted" style="margin-top:14px;">Welche Art der Unterstützung wird benötigt?</p>
+          <div id="unterstuetzung-haken" class="haken-liste"></div>
+          <div class="form-field" style="margin-top:14px;">
+            <label for="f-unt-aufgaben">Welche Aufgaben sollen wahrgenommen werden?</label>
+            <textarea id="f-unt-aufgaben" rows="2"></textarea>
+          </div>
+          <div class="form-field">
+            <label for="f-sonstiges-text">Sonstiges (bspw. Räum- und Streudienst)</label>
+            <textarea id="f-sonstiges-text" rows="2"></textarea>
+          </div>
+        </div>
+        <p class="muted" style="margin-top:12px;">
+          Mit der Unterschrift auf dem Ausdruck bestätigt der Antragsteller die
+          Notwendigkeit dieser Unterstützung. Der Landkreis behält sich vor,
+          einzelne Aufgaben an den Veranstalter zu übertragen.
+        </p>
+      </div>
+
+      <!-- 7 Beheizung -->
+      <div class="card">
+        <h3>7. Beheizung / Heizzeitverlängerung</h3>
+        <div class="form-field" style="max-width:260px;">
+          <label for="f-beheizung">Wird eine Beheizung benötigt?</label>
+          <select id="f-beheizung" class="ja-nein"></select>
+        </div>
+        <div class="form-field" style="margin-top:14px;">
+          <label for="f-heiz-bemerkungen">Bemerkungen (Heizzeit, Abweichung von Standardtemperatur usw.)</label>
+          <textarea id="f-heiz-bemerkungen" rows="2"></textarea>
+          <span class="field-hint">
+            Die Heizzeit orientiert sich am Ablaufplan oben; eine Vorlaufzeit wird
+            vom Amt berücksichtigt. Hier nur eintragen, was davon abweicht.
+          </span>
+        </div>
+      </div>
+
+      <!-- 8 Speisen -->
+      <div class="card">
+        <h3>8. Verkauf/Ausgabe von Speisen und Getränken</h3>
+        <div class="form-field" style="max-width:260px;">
+          <label for="f-speisen">Werden Speisen/Getränke ausgegeben?</label>
+          <select id="f-speisen" class="ja-nein"></select>
+        </div>
+        <div class="form-field" style="margin-top:14px;">
+          <label for="f-speisen-text">Welche Speisen und Getränke?</label>
+          <textarea id="f-speisen-text" rows="3"></textarea>
+        </div>
+      </div>
+
+      <!-- 9 Bühne -->
+      <div class="card">
+        <h3>9. Szenen-, Bühnen- und Besucherflächen</h3>
+        <div id="buehne-block"></div>
+      </div>
+
+      <!-- Unterschrift -->
+      <div class="card">
+        <h3>Unterschrift</h3>
+        <div class="form-field" style="max-width:320px;">
+          <label for="f-ort-datum">Ort, Datum</label>
+          <input type="text" id="f-ort-datum" placeholder="Heilbad Heiligenstadt, 22.07.2026" />
+        </div>
+        <p class="muted">
+          Die Unterschriften von Veranstaltungsleitung und Schulleitung bleiben im
+          PDF bewusst leer — sie werden auf dem Ausdruck geleistet.
+        </p>
+      </div>
+
+      <!-- Status & Löschen -->
+      <div class="card">
+        <h3>Bearbeitung</h3>
+        <div class="form-field" style="max-width:260px;">
+          <label for="f-status">Status</label>
+          <select id="f-status">
+            <option value="entwurf">Entwurf</option>
+            <option value="eingereicht">Eingereicht</option>
+            <option value="genehmigt">Genehmigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="f-notiz">Interne Notiz (steht nicht im PDF)</label>
+          <textarea id="f-notiz" rows="2"></textarea>
+        </div>
+        <div class="btn-row" style="justify-content:flex-start; margin-top:14px;">
+          <button type="button" class="btn secondary small" id="btn-kopieren">Als Vorlage kopieren</button>
+          <button type="button" class="btn danger small" id="btn-loeschen">Antrag löschen</button>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ---------- Info ---------- -->
+    <section class="tab-section" id="tab-info">
+      <div class="card">
+        <h2>Über die Raumnutzung <span class="version-badge" id="version-badge-2"></span></h2>
+        <p class="muted">
+          Erfasst das Formular „Raumnutzung für Veranstaltungen“ des Landkreises
+          Eichsfeld (Liegenschaftsamt) und erzeugt daraus das ausgefüllte
+          Original-PDF für die Einreichung.
+        </p>
+      </div>
+      <div class="card">
+        <h2>Änderungen</h2>
+        <div id="changelog-list"></div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="config.js?v=1.0"></script>
+<script src="db.js?v=1.0"></script>
+<script src="pdf-fill.js?v=1.0"></script>
+<script src="app.js?v=1.0"></script>
+</body>
+</html>
