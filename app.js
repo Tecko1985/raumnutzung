@@ -129,7 +129,7 @@ function fuelleJaNeinSelects(root) {
 function buehneVorbelegung() {
   const b = {};
   BUEHNE_FELDER.forEach((f) => { b[f.key] = false; });
-  return b;
+  return Object.assign(b, ANTRAG_VORBELEGUNG.buehneTexte);
 }
 
 function leererAntrag() {
@@ -151,12 +151,12 @@ function leererAntrag() {
     eintrittsgeld: ANTRAG_VORBELEGUNG.eintrittsgeld,
     technPersonal: ANTRAG_VORBELEGUNG.technPersonal,
     unterstuetzung: Object.assign({}, ANTRAG_VORBELEGUNG.unterstuetzung),
-    unterstuetzungAufgaben: "",
+    unterstuetzungAufgaben: ANTRAG_VORBELEGUNG.unterstuetzungAufgaben,
     sonstigesText: "",
     beheizung: ANTRAG_VORBELEGUNG.beheizung,
     heizBemerkungen: "",
     speisen: ANTRAG_VORBELEGUNG.speisen,
-    speisenText: "",
+    speisenText: ANTRAG_VORBELEGUNG.speisenText,
     buehne: buehneVorbelegung(),
     // Vorbelegt statt nur als Platzhalter angedeutet: ein grauer Platzhalter
     // sieht aus wie ein Wert, wird deshalb übersehen — und das Feld blieb im

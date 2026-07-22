@@ -10,6 +10,7 @@ const APP_CHANGELOG = [
           "Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld wird komplett digital erfasst — alle neun Abschnitte vom Veranstaltungsort bis zu den Bühnenflächen.",
           "Teilnehmerzahlen werden automatisch summiert; die Summe muss niemand mehr von Hand addieren.",
           "Ein neuer Antrag ist bereits so vorbelegt wie das zuletzt eingereichte Formular: Beheizung und Bewirtung auf Ja, Schließdienst, Objekteinweisung, Objektabnahme, Abbau und Reinigung angehakt, alles Übrige auf Nein. Abweichungen hakt man einzeln um.",
+          "Auch die wiederkehrenden Texte stehen schon drin — das Speisen- und Getränkeangebot, die Aufgaben des Hausmeisters und die Banner-Werbung der Sponsoren. Was nicht passt, wird überschrieben.",
           "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten — Eingaben werden laufend automatisch gesichert.",
           "Anmeldung & Speicherung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort auf diesem Gerät nötig."
         ]
@@ -66,9 +67,26 @@ const ANTRAG_VORBELEGUNG = {
     abbauAusraeumen: true,
     reinigung: true,
     sonstiges: false
-  }
+  },
   // Abschnitt 9 (Bühne) bleibt durchgehend „Nein“, siehe buehneVorbelegung()
   // in app.js — im eingereichten Original ist dort ebenfalls überall Nein.
+
+  // Freitexte, ebenfalls aus dem eingereichten Original. Zwei offensichtliche
+  // Tippfehler der Vorlage sind dabei berichtigt („Alkoholfreihe“ -> alkoholfreie,
+  // „Cafe“ -> Kaffee) — auf einem Antrag ans Amt sollen sie nicht stehen.
+  // Bewusst nur Latin-1-Zeichen: Ein typografischer Gedankenstrich würde von
+  // pdfText() zum Bindestrich, der Text stünde dann in der App anders da als im
+  // PDF. Was hier steht, landet unverändert im Formular.
+  unterstuetzungAufgaben:
+    "Unterstützung der internen Technik, falls es technische Ausfälle gibt. "
+    + "Kein technisches Personal - nur Hausmeister als Ansprechpartner.",
+  speisenText:
+    "Belegte Brote / Brötchen, Bockwurst / Wiener Würste, alkoholfreie Getränke, Kaffee",
+  // Steht im Original unter „Bühnendekoration: Nein“ — die Banner hängen in
+  // Halle und Foyer, nicht auf der Bühne. Bewusst so übernommen.
+  buehneTexte: {
+    dekorationText: "Banner-Werbung in der Halle und im Foyer über Sponsoren"
+  }
 };
 
 const STATUS_LABELS = {
