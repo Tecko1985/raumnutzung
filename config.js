@@ -50,13 +50,16 @@ const ORTE = [
 // Lorenz-Kellner-Halle). Das ist der Normalfall einer Hallenveranstaltung des
 // Vereins — abweichende Punkte hakt man beim Ausfüllen einzeln um.
 //
-// Der scheinbare Widerspruch „technisches Personal: Nein“ und trotzdem fünf
-// gesetzte Unterstützungs-Kästchen steht so im eingereichten Original: Es wird
-// kein technisches Personal des Landkreises angefordert, die Leistungen
-// erbringt der Hausmeister. Erklärt wird das im Freitext darunter.
+// EINE bewusste Abweichung vom Original: „Unterstützung durch technisches
+// Personal“ steht hier auf **Ja**, im eingereichten Formular auf Nein. Dort war
+// das ein Widerspruch — fünf angehakte Unterstützungsleistungen bei
+// gleichzeitig „Nein“ auf die Frage, ob Unterstützung beantragt wird.
+// User-Entscheidung vom 2026-07-22. Der Freitext darunter präzisiert, dass
+// dafür kein Personal des Landkreises nötig ist, sondern der Hausmeister
+// genügt. Nicht auf „Nein“ zurückdrehen.
 const ANTRAG_VORBELEGUNG = {
   eintrittsgeld: false,
-  technPersonal: false,
+  technPersonal: true,
   beheizung: true,
   speisen: true,
   // Erfahrungswert für eine Hallenveranstaltung des Vereins. Die übrigen
