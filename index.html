@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>🏛️ Raumnutzung</title>
 <meta name="theme-color" content="#1a56a0" />
-<link rel="stylesheet" href="style.css?v=1.0" />
+<link rel="stylesheet" href="style.css?v=1.1" />
 </head>
 <body>
 
@@ -273,14 +273,29 @@
 
       <!-- Unterschrift -->
       <div class="card">
-        <h3>Unterschrift</h3>
-        <div class="form-field" style="max-width:320px;">
+        <h3>Unterschrift der Veranstaltungsleitung</h3>
+        <p class="muted">
+          Mit der Unterschrift wird die Richtigkeit aller Angaben bestätigt, dazu
+          die Kenntnisnahme der Haus- bzw. Hallennutzungsordnung.
+        </p>
+        <div class="form-field" style="max-width:320px; margin-top:14px;">
           <label for="f-ort-datum">Ort, Datum</label>
-          <input type="text" id="f-ort-datum" placeholder="Heilbad Heiligenstadt, 22.07.2026" />
+          <input type="text" id="f-ort-datum" />
+        </div>
+        <div class="form-field">
+          <label>Unterschrift</label>
+          <div class="sig-wrap">
+            <canvas id="sig-canvas" class="sig-canvas" width="600" height="180"></canvas>
+            <span class="sig-hint" id="sig-hint">Hier mit Maus, Finger oder Stift unterschreiben</span>
+          </div>
+          <div class="btn-row" style="justify-content:flex-start; margin-top:8px;">
+            <button type="button" class="btn secondary small" id="btn-sig-clear">Unterschrift löschen</button>
+            <span class="save-hint" id="sig-status"></span>
+          </div>
         </div>
         <p class="muted">
-          Die Unterschriften von Veranstaltungsleitung und Schulleitung bleiben im
-          PDF bewusst leer — sie werden auf dem Ausdruck geleistet.
+          Der Unterschriftsblock der <strong>Schulleitung</strong> bleibt im PDF
+          leer — den zeichnet die Schule selbst auf dem Ausdruck.
         </p>
       </div>
 
@@ -328,9 +343,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="config.js?v=1.1"></script>
-<script src="db.js?v=1.0"></script>
-<script src="pdf-fill.js?v=1.0"></script>
-<script src="app.js?v=1.1"></script>
+<script src="config.js?v=1.2"></script>
+<script src="db.js?v=1.1"></script>
+<script src="pdf-fill.js?v=1.1"></script>
+<script src="app.js?v=1.2"></script>
 </body>
 </html>

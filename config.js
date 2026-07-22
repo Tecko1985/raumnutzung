@@ -18,7 +18,8 @@ const APP_CHANGELOG = [
         title: "Amtliches PDF erzeugen",
         items: [
           "Aus jedem Antrag entsteht auf Knopfdruck das ausgefüllte Original-Formular des Landkreises als PDF — genau das Blatt, das das Liegenschaftsamt erwartet.",
-          "Unterschriftsfelder bleiben bewusst leer: Das PDF wird ausgedruckt und vom Veranstaltungsleiter unterschrieben.",
+          "Die Veranstaltungsleitung unterschreibt direkt in der App — mit Maus, Finger oder Stift. Die Unterschrift landet zusammen mit Ort und Datum an der richtigen Stelle im PDF, das Blatt ist damit fertig zum Einreichen.",
+          "Der Unterschriftsblock der Schulleitung bleibt bewusst leer — den zeichnet die Schule selbst auf dem Ausdruck.",
           "Das erzeugte PDF lässt sich in jedem PDF-Programm nachbearbeiten, falls das Amt Rückfragen hat."
         ]
       },
@@ -234,6 +235,20 @@ const UNTERSTUETZUNG_LABELS = [
 // Eingabefeld — die Zeile ist nur bedruckt. Der Text wird deshalb an diese
 // Stelle gezeichnet (Seite 1, Ursprung unten-links, Punkte).
 const PDF_BESUCHER_TEXT = { seite: 0, x: 240, y: 318, groesse: 8, maxZeichen: 60 };
+
+// Unterschrift des Veranstaltungsleiters (Seite 4). Die Unterschriftslinien sind
+// im Formular keine Formularfelder, sondern gezeichnete Rechtecke von 0,5 pt
+// Höhe. Am 2026-07-22 aus dem Content-Stream der Seite ausgelesen:
+//
+//   Veranstaltungsleiter: Ort/Datum x=65.4  y=270.8  b=196.8
+//                         Unterschrift x=276.4 y=270.8 b=249.7   <- hier
+//   Schulleitung:         Ort/Datum x=65.4  y=172.9  b=196.8
+//                         Unterschrift x=276.4 y=172.9 b=249.7
+//
+// Die Unterschrift wird knapp ÜBER die Linie gesetzt und unter Beibehaltung des
+// Seitenverhältnisses in den Rahmen eingepasst. **Der Block der Schulleitung
+// bleibt immer leer** — den unterschreibt die Schule selbst auf dem Ausdruck.
+const PDF_UNTERSCHRIFT = { seite: 3, x: 280, y: 274, maxBreite: 242, maxHoehe: 38 };
 
 // Zeichen pro Zeile für die mehrzeiligen Freitextfelder (Feldbreite ~475pt
 // bei 10pt Schrift). Wird nur zum Umbrechen genutzt, nicht zum Abschneiden.

@@ -58,3 +58,41 @@ async function gatewaySave(dataObj) {
 async function fetchMe() {
   return gatewayRequest({ action: "me", app: GATEWAY_APP_ID });
 }
+
+// Unterschriften liegen als eigene PNG-Dateien im dateien/-Ordner der App statt
+// als base64-DataURL inline in der JSON. Sonst wüchse die Gesamtdatei mit jedem
+// Antrag um mehrere Zehn-KB und jedes Speichern übertrüge alle Unterschriften
+// erneut (gleiches Muster wie TrainerCheckliste und Trainerdaten).
+async function gatewayFilePut(id, name, dataBase64) {
+  return gatewayRequest({
+    action: "dav-file-put", app: GATEWAY_APP_ID, id, name,
+    contentType: "image/png", dataBase64
+  });
+}
+
+async function gatewayFileDelete(id) {
+  return gatewayRequest({ action: "dav-file-delete", app: GATEWAY_APP_ID, id });
+}
+
+// Holt eine ausgelagerte Unterschrift und liefert sie als PNG-DataURL ("" bei 404/Fehler).
+async function gatewayFileGetDataUrl(id) {
+  const token = getSessionToken();
+  if (!token) throw new NotLoggedInError();
+  let resp;
+  try {
+    resp = await fetch(GATEWAY_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + token },
+      body: JSON.stringify({ action: "dav-file-get", app: GATEWAY_APP_ID, id })
+    });
+  } catch (_) { return ""; }
+  if (!resp.ok) return "";
+  const blob = await resp.blob();
+  if (!blob.size) return "";
+  return new Promise((resolve) => {
+    const fr = new FileReader();
+    fr.onload = () => resolve(String(fr.result || ""));
+    fr.onerror = () => resolve("");
+    fr.readAsDataURL(blob);
+  });
+}

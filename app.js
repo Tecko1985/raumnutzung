@@ -30,6 +30,7 @@ async function doSave() {
   if (saveInFlight) { savePending = true; return; }
   saveInFlight = true;
   try {
+    await lagereUnterschriftenAus();
     await gatewaySave(appData);
     setSaveHint("Gespeichert " + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }));
   } catch (e) {
@@ -83,6 +84,16 @@ function el(id) { return document.getElementById(id); }
 
 function neueId() {
   return "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// Vorbelegung für „Ort, Datum“. Zweistellig mit führender Null — toLocale-
+// DateString("de-DE") liefert „22.7.2026“, und so schreibt man kein Datum auf
+// ein Amtsformular.
+function heuteOrtDatum() {
+  const d = new Date().toLocaleDateString("de-DE", {
+    day: "2-digit", month: "2-digit", year: "numeric"
+  });
+  return "Heilbad Heiligenstadt, " + d;
 }
 
 function datumAnzeige(iso) {
@@ -144,7 +155,16 @@ function leererAntrag() {
     speisen: false,
     speisenText: "",
     buehne: buehneVorbelegung(),
-    ortDatum: ""
+    // Vorbelegt statt nur als Platzhalter angedeutet: ein grauer Platzhalter
+    // sieht aus wie ein Wert, wird deshalb übersehen — und das Feld blieb im
+    // fertigen Antrag leer.
+    ortDatum: heuteOrtDatum(),
+    // Unterschrift der Veranstaltungsleitung. Frisch gezeichnet liegt sie als
+    // PNG-DataURL in `unterschrift`; beim Speichern wandert sie in eine eigene
+    // Gateway-Datei und nur noch die Id bleibt im Datensatz.
+    unterschrift: "",
+    unterschriftFileId: "",
+    unterschriebenAm: ""
   };
 }
 
@@ -179,6 +199,11 @@ function normalizeData(raw) {
     ["eintrittsgeld", "technPersonal", "beheizung", "speisen"].forEach((k) => {
       if (n[k] === null || n[k] === undefined) n[k] = false;
     });
+    // Ort/Datum war in der ersten Fassung nur ein grauer Platzhalter und blieb
+    // dadurch im fertigen Antrag leer — leere Altwerte deshalb vorbelegen.
+    if (!n.ortDatum) {
+      n.ortDatum = heuteOrtDatum();
+    }
     if (!STATUS_LABELS[n.status]) n.status = "entwurf";
     return n;
   });
@@ -363,6 +388,7 @@ function fuelleFormular(a) {
   setV("f-status", a.status);
   setV("f-notiz", a.notiz);
 
+  zeigeUnterschrift(a);
   setzeSchreibschutz();
   setSaveHint("");
 }
@@ -374,9 +400,11 @@ function setzeSchreibschutz() {
   const gesperrt = !canEdit();
   document.querySelectorAll("#tab-antrag input, #tab-antrag textarea, #tab-antrag select")
     .forEach((e) => { e.disabled = gesperrt; });
-  ["btn-loeschen", "btn-kopieren"].forEach((id) => {
+  ["btn-loeschen", "btn-kopieren", "btn-sig-clear"].forEach((id) => {
     const b = el(id); if (b) b.style.display = gesperrt ? "none" : "";
   });
+  const canvas = el("sig-canvas");
+  if (canvas) canvas.classList.toggle("gesperrt", gesperrt);
   const neu = el("btn-neuer-antrag");
   if (neu) neu.style.display = gesperrt ? "none" : "";
   if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen sind der Bearbeiter-Gruppe vorbehalten.");
@@ -465,6 +493,193 @@ function uebernehmeFeld(a, t) {
 }
 
 // ---------------------------------------------------------------------------
+// Unterschrift
+// ---------------------------------------------------------------------------
+let sigZeichnet = false;
+let sigCtx = null;
+
+function initUnterschrift() {
+  const canvas = el("sig-canvas");
+  sigCtx = canvas.getContext("2d");
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = "round";
+  sigCtx.lineJoin = "round";
+  sigCtx.strokeStyle = "#12233f";
+
+  // Pointer-Events decken Maus, Finger und Stift in einem Satz Handler ab.
+  const punkt = (ev) => {
+    const r = canvas.getBoundingClientRect();
+    return {
+      x: (ev.clientX - r.left) * (canvas.width / r.width),
+      y: (ev.clientY - r.top) * (canvas.height / r.height)
+    };
+  };
+
+  canvas.addEventListener("pointerdown", (ev) => {
+    if (!canEdit()) return;
+    sigZeichnet = true;
+    canvas.setPointerCapture(ev.pointerId);
+    const p = punkt(ev);
+    sigCtx.beginPath();
+    sigCtx.moveTo(p.x, p.y);
+    el("sig-hint").style.display = "none";
+    ev.preventDefault();
+  });
+
+  canvas.addEventListener("pointermove", (ev) => {
+    if (!sigZeichnet) return;
+    const p = punkt(ev);
+    sigCtx.lineTo(p.x, p.y);
+    sigCtx.stroke();
+    ev.preventDefault();
+  });
+
+  const beenden = () => {
+    if (!sigZeichnet) return;
+    sigZeichnet = false;
+    uebernehmeUnterschrift();
+  };
+  canvas.addEventListener("pointerup", beenden);
+  canvas.addEventListener("pointercancel", beenden);
+  canvas.addEventListener("pointerleave", beenden);
+
+  el("btn-sig-clear").addEventListener("click", loescheUnterschrift);
+}
+
+// Schreibt den aktuellen Canvas-Inhalt in den Datensatz. Die Auslagerung in eine
+// eigene Datei passiert erst beim Speichern (siehe lagereUnterschriftAus).
+function uebernehmeUnterschrift() {
+  const a = findeAntrag(currentAntragId);
+  if (!a || !canEdit()) return;
+  const png = zugeschnittenesPng();
+  if (!png) return;
+  a.unterschrift = png;
+  a.unterschriebenAm = new Date().toISOString();
+  a.geaendertAm = a.unterschriebenAm;
+  setUnterschriftStatus(a);
+  scheduleSave();
+}
+
+// Schneidet die Zeichenfläche auf den tatsächlich beschriebenen Bereich zu.
+// Ohne das wandert die ganze 600x180-Fläche ins PDF und die Unterschrift wird
+// beim Einpassen in die Formularzeile winzig — der weiße Rand bestimmt sonst
+// die Skalierung. Liefert null, wenn nichts gezeichnet wurde.
+function zugeschnittenesPng() {
+  const canvas = el("sig-canvas");
+  const w = canvas.width;
+  const h = canvas.height;
+  const daten = sigCtx.getImageData(0, 0, w, h).data;
+  let minX = w, minY = h, maxX = -1, maxY = -1;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (daten[(y * w + x) * 4 + 3] > 10) { // Alpha-Kanal: gezeichnet?
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+  if (maxX < 0) return null; // leer
+
+  const rand = 6;
+  minX = Math.max(0, minX - rand); minY = Math.max(0, minY - rand);
+  maxX = Math.min(w - 1, maxX + rand); maxY = Math.min(h - 1, maxY + rand);
+
+  const aus = document.createElement("canvas");
+  aus.width = maxX - minX + 1;
+  aus.height = maxY - minY + 1;
+  aus.getContext("2d").drawImage(canvas, minX, minY, aus.width, aus.height,
+                                 0, 0, aus.width, aus.height);
+  return aus.toDataURL("image/png");
+}
+
+function loescheUnterschrift() {
+  const a = findeAntrag(currentAntragId);
+  if (!a || !canEdit()) return;
+  leereCanvas();
+  const alteId = a.unterschriftFileId;
+  a.unterschrift = "";
+  a.unterschriftFileId = "";
+  a.unterschriebenAm = "";
+  a.geaendertAm = new Date().toISOString();
+  setUnterschriftStatus(a);
+  // Die ausgelagerte Datei mitnehmen — sonst bleiben Bild-Leichen in der Cloud.
+  // Scheitert das, ist nur eine verwaiste Datei die Folge, kein Datenverlust.
+  if (alteId) gatewayFileDelete(alteId).catch(() => {});
+  scheduleSave();
+}
+
+function leereCanvas() {
+  const canvas = el("sig-canvas");
+  if (sigCtx) sigCtx.clearRect(0, 0, canvas.width, canvas.height);
+  const hint = el("sig-hint");
+  if (hint) hint.style.display = "";
+}
+
+function setUnterschriftStatus(a) {
+  const s = el("sig-status");
+  if (!s) return;
+  if (a.unterschrift || a.unterschriftFileId) {
+    s.textContent = a.unterschriebenAm
+      ? "Unterschrieben am " + new Date(a.unterschriebenAm).toLocaleDateString("de-DE")
+      : "Unterschrift vorhanden";
+    s.className = "save-hint";
+  } else {
+    s.textContent = "Noch nicht unterschrieben";
+    s.className = "save-hint";
+  }
+}
+
+// Zeichnet eine gespeicherte Unterschrift zurück auf die Fläche.
+async function zeigeUnterschrift(a) {
+  leereCanvas();
+  setUnterschriftStatus(a);
+  let dataUrl = a.unterschrift;
+  if (!dataUrl && a.unterschriftFileId) {
+    dataUrl = await gatewayFileGetDataUrl(a.unterschriftFileId).catch(() => "");
+  }
+  if (!dataUrl) return;
+  // Der Antrag kann inzwischen gewechselt haben — sonst landet die Unterschrift
+  // des einen Antrags auf der Fläche eines anderen.
+  if (currentAntragId !== a.id) return;
+  const canvas = el("sig-canvas");
+  await new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      // Das gespeicherte Bild ist zugeschnitten und hat ein anderes
+      // Seitenverhältnis als die Fläche — proportional einpassen statt
+      // strecken, sonst sieht die eigene Unterschrift beim Wiederöffnen
+      // verzerrt aus.
+      const skala = Math.min(canvas.width / img.width, canvas.height / img.height, 1);
+      sigCtx.drawImage(img, 8, 8, img.width * skala, img.height * skala);
+      el("sig-hint").style.display = "none";
+      resolve();
+    };
+    img.onerror = resolve;
+    img.src = dataUrl;
+  });
+}
+
+// Lagert eine frisch gezeichnete Unterschrift in eine eigene Gateway-Datei aus,
+// bevor die JSON gespeichert wird. Schlägt der Upload fehl, bleibt sie inline
+// in der JSON — alter Zustand, kein Datenverlust, nächster Versuch beim
+// nächsten Speichern.
+async function lagereUnterschriftenAus() {
+  for (const a of appData.antraege) {
+    if (!a.unterschrift || !/^data:image\/png;base64,/.test(a.unterschrift)) continue;
+    // Stabile Id je Antrag: überschreiben statt bei jedem Strich eine neue Datei.
+    const fileId = a.unterschriftFileId || crypto.randomUUID();
+    const base64 = a.unterschrift.split(",")[1] || "";
+    try {
+      await gatewayFilePut(fileId, "unterschrift.png", base64);
+      a.unterschriftFileId = fileId;
+      a.unterschrift = "";
+    } catch (_) { /* bleibt inline, wird beim nächsten Speichern erneut versucht */ }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Aktionen
 // ---------------------------------------------------------------------------
 function neuerAntrag() {
@@ -496,7 +711,12 @@ function kopiereAntrag() {
   kopie.veranstaltung = { datum: "", einlass: "", beginn: "", ende: "" };
   kopie.aufbau = { datum: "", beginn: "", ende: "" };
   kopie.abbau = { datum: "", beginn: "", ende: "" };
-  kopie.ortDatum = "";
+  kopie.ortDatum = heuteOrtDatum();
+  // Die Unterschrift wird NIE mitkopiert: Sie bestätigt die Richtigkeit genau
+  // dieser Angaben. Auf einer Kopie mit anderem Termin wäre sie eine Fälschung.
+  kopie.unterschrift = "";
+  kopie.unterschriftFileId = "";
+  kopie.unterschriebenAm = "";
   appData.antraege.push(kopie);
   renderUebersicht();
   oeffneAntrag(kopie.id);
@@ -508,6 +728,9 @@ function loescheAntrag() {
   if (!a || !canEdit()) return;
   const name = a.bezeichnung || "diesen Antrag";
   if (!confirm(`„${name}“ wirklich löschen? Das lässt sich nicht rückgängig machen.`)) return;
+  // Ausgelagerte Unterschrift mitnehmen, sonst bleibt sie als verwaiste Datei
+  // in der Cloud liegen.
+  if (a.unterschriftFileId) gatewayFileDelete(a.unterschriftFileId).catch(() => {});
   appData.antraege = appData.antraege.filter((x) => x.id !== a.id);
   currentAntragId = null;
   el("nav-antrag").style.display = "none";
@@ -529,7 +752,13 @@ async function erzeugePdf() {
   btn.textContent = "PDF wird erzeugt…";
   try {
     flushSave();
-    const { blob, fehler } = await erzeugeAntragsPdf(a);
+    // Die Unterschrift kann bereits ausgelagert sein — dann liegt im Datensatz
+    // nur die Datei-Id und das Bild muss fürs PDF erst geholt werden.
+    let unterschrift = a.unterschrift;
+    if (!unterschrift && a.unterschriftFileId) {
+      unterschrift = await gatewayFileGetDataUrl(a.unterschriftFileId).catch(() => "");
+    }
+    const { blob, fehler } = await erzeugeAntragsPdf(a, unterschrift);
     tab.show(blob);
     ladeHerunter(blob, pdfDateiname(a));
     if (fehler.length) {
@@ -629,6 +858,7 @@ async function boot() {
   renderZahlenGrid();
   renderUnterstuetzungHaken();
   renderBuehneBlock();
+  initUnterschrift();
   el("orte-liste").innerHTML = ORTE.map((o) => `<option value="${escapeHtml(o)}"></option>`).join("");
 
   try {
