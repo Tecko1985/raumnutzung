@@ -9,7 +9,7 @@ const APP_CHANGELOG = [
         items: [
           "Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld wird komplett digital erfasst — alle neun Abschnitte vom Veranstaltungsort bis zu den Bühnenflächen.",
           "Teilnehmerzahlen werden automatisch summiert; die Summe muss niemand mehr von Hand addieren.",
-          "Alle Ja/Nein-Fragen stehen von vornherein auf „Nein“ — das Formular verlangt in jeder Zeile ein Kreuz, und der Normalfall einer Hallenveranstaltung ist überall Nein. Abweichungen wie Beheizung oder Bewirtung hakt man einzeln um.",
+          "Ein neuer Antrag ist bereits so vorbelegt wie das zuletzt eingereichte Formular: Beheizung und Bewirtung auf Ja, Schließdienst, Objekteinweisung, Objektabnahme, Abbau und Reinigung angehakt, alles Übrige auf Nein. Abweichungen hakt man einzeln um.",
           "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten — Eingaben werden laufend automatisch gesichert.",
           "Anmeldung & Speicherung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort auf diesem Gerät nötig."
         ]
@@ -42,6 +42,34 @@ const ORTE = [
   "Sportplatz Ernst-Thälmann-Straße",
   "Sonstiger Ort (siehe Eintrag)"
 ];
+
+// Vorbelegung eines neuen Antrags, übernommen aus dem zuletzt beim
+// Liegenschaftsamt eingereichten Formular (Nachwuchs-Fußballturnier in der
+// Lorenz-Kellner-Halle). Das ist der Normalfall einer Hallenveranstaltung des
+// Vereins — abweichende Punkte hakt man beim Ausfüllen einzeln um.
+//
+// Der scheinbare Widerspruch „technisches Personal: Nein“ und trotzdem fünf
+// gesetzte Unterstützungs-Kästchen steht so im eingereichten Original: Es wird
+// kein technisches Personal des Landkreises angefordert, die Leistungen
+// erbringt der Hausmeister. Erklärt wird das im Freitext darunter.
+const ANTRAG_VORBELEGUNG = {
+  eintrittsgeld: false,
+  technPersonal: false,
+  beheizung: true,
+  speisen: true,
+  unterstuetzung: {
+    aufbauBestuhlung: false,
+    schliessdienstVor: true,
+    objekteinweisung: true,
+    waehrendVeranstaltung: false,
+    objektabnahme: true,
+    abbauAusraeumen: true,
+    reinigung: true,
+    sonstiges: false
+  }
+  // Abschnitt 9 (Bühne) bleibt durchgehend „Nein“, siehe buehneVorbelegung()
+  // in app.js — im eingereichten Original ist dort ebenfalls überall Nein.
+};
 
 const STATUS_LABELS = {
   entwurf: "Entwurf",

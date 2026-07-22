@@ -148,14 +148,14 @@ function leererAntrag() {
     aufbau: { datum: "", beginn: "", ende: "" },
     abbau: { datum: "", beginn: "", ende: "" },
     zahlen: {},
-    eintrittsgeld: false,
-    technPersonal: false,
-    unterstuetzung: {},
+    eintrittsgeld: ANTRAG_VORBELEGUNG.eintrittsgeld,
+    technPersonal: ANTRAG_VORBELEGUNG.technPersonal,
+    unterstuetzung: Object.assign({}, ANTRAG_VORBELEGUNG.unterstuetzung),
     unterstuetzungAufgaben: "",
     sonstigesText: "",
-    beheizung: false,
+    beheizung: ANTRAG_VORBELEGUNG.beheizung,
     heizBemerkungen: "",
-    speisen: false,
+    speisen: ANTRAG_VORBELEGUNG.speisen,
     speisenText: "",
     buehne: buehneVorbelegung(),
     // Vorbelegt statt nur als Platzhalter angedeutet: ein grauer Platzhalter
@@ -191,7 +191,9 @@ function normalizeData(raw) {
     n.aufbau = Object.assign({ datum: "", beginn: "", ende: "" }, a.aufbau);
     n.abbau = Object.assign({ datum: "", beginn: "", ende: "" }, a.abbau);
     n.zahlen = Object.assign({}, a.zahlen);
-    n.unterstuetzung = Object.assign({}, a.unterstuetzung);
+    // Vorbelegung zuerst, bereits gesetzte Häkchen gewinnen: ein nie
+    // angefasster Abschnitt bekommt den Standard, eine bewusste Abwahl bleibt.
+    n.unterstuetzung = Object.assign({}, ANTRAG_VORBELEGUNG.unterstuetzung, a.unterstuetzung);
     // Bühne: Vorbelegung zuerst, damit nie beantwortete Fragen den Standard
     // „Nein“ bekommen und nicht als „keine Angabe“ im Antrag ans Amt gehen.
     // Bereits gesetzte Antworten überschreiben sie.
@@ -199,8 +201,11 @@ function normalizeData(raw) {
     // Einmalige Angleichung an den Standard „Nein“: Anträge aus der ersten
     // Fassung tragen hier ein explizites null, das damals der Vorgabewert war
     // und keine bewusste Antwort ist.
+    // Nie beantwortete Fragen bekommen den aktuellen Standard aus der Vorlage —
+    // nicht hart „Nein“, sonst hinge hier für immer der Stand der ersten
+    // Fassung fest, während neue Anträge längst anders vorbelegt werden.
     ["eintrittsgeld", "technPersonal", "beheizung", "speisen"].forEach((k) => {
-      if (n[k] === null || n[k] === undefined) n[k] = false;
+      if (n[k] === null || n[k] === undefined) n[k] = vorlage[k];
     });
     // Ort/Datum war in der ersten Fassung nur ein grauer Platzhalter und blieb
     // dadurch im fertigen Antrag leer — leere Altwerte deshalb vorbelegen.
