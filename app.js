@@ -870,8 +870,11 @@ async function boot() {
   el("orte-liste").innerHTML = ORTE.map((o) => `<option value="${escapeHtml(o)}"></option>`).join("");
 
   try {
-    currentUser = await fetchMe();
+    // Erst laden, dann fetchMe(): dav-load liefert das "me" gratis mit, der
+    // zweite Aufruf kommt damit ohne eigenen Request aus. Andersherum waeren es
+    // zwei Roundtrips.
     appData = normalizeData(await gatewayLoad());
+    currentUser = await fetchMe();
   } catch (e) {
     showConnectScreen(e instanceof NotLoggedInError ? null : e.message);
     return;
