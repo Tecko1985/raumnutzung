@@ -683,6 +683,11 @@ async function zeigeUnterschrift(a) {
   await new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
+      // Der Wechsel-Check von oben noch einmal: zwischen dem Setzen von
+      // img.src und diesem onload liegt ein Task — wechselt der Antrag genau
+      // dann, landete die Unterschrift des alten auf der (frisch geleerten)
+      // Fläche des neuen und würde beim nächsten Strich dort mitgespeichert.
+      if (currentAntragId !== a.id) { resolve(); return; }
       // Das gespeicherte Bild ist zugeschnitten und hat ein anderes
       // Seitenverhältnis als die Fläche — proportional einpassen statt
       // strecken, sonst sieht die eigene Unterschrift beim Wiederöffnen

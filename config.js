@@ -2,6 +2,18 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.1",
+    groups: [
+      {
+        title: "Fehlerbehebungen",
+        items: [
+          "Mehrzeilige Texte (etwa die Aufgaben des Hausmeisters) kommen jetzt sauber im PDF an — Zeilenumbrüche wurden bisher als Fragezeichen ins Amtsformular übernommen.",
+          "Beim schnellen Wechseln zwischen zwei Anträgen konnte die Unterschrift des zuerst geöffneten kurz auf der Fläche des zweiten landen — die Anzeige prüft jetzt, ob der Antrag noch offen ist."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.0",
     groups: [
       {
