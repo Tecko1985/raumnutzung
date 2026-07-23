@@ -29,6 +29,7 @@ const APP_CHANGELOG = [
         title: "Übersicht & Status",
         items: [
           "Alle Anträge in einer Liste, sortiert nach Veranstaltungsdatum, mit Status Entwurf/Eingereicht/Genehmigt/Abgelehnt.",
+          "In der Liste steht jetzt auch, wer den Antrag angelegt hat — bei mehreren Bearbeitern muss man ihn dafür nicht mehr öffnen.",
           "Kopieren eines bestehenden Antrags als Vorlage — wiederkehrende Veranstaltungen müssen nicht neu erfasst werden.",
           "Sichtbarkeit auf die Bearbeiter-Gruppe beschränkt, weil das Formular private Anschriften und Telefonnummern enthält."
         ]

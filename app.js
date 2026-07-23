@@ -71,6 +71,25 @@ function canEdit() {
   return !!(currentUser && currentUser.canEdit);
 }
 
+// Klarname der eingeloggten Person, leer wenn der Gateway keinen liefert.
+function aktuellerKlarname() {
+  if (!currentUser) return "";
+  return [currentUser.vorname, currentUser.nachname].filter(Boolean).join(" ");
+}
+
+// Anzeigename des Erstellers. Der Klarname wird seit dem 2026-07-23 beim
+// Anlegen mitgespeichert; ältere Anträge kennen nur den Login-Namen. Stammt so
+// einer von der gerade eingeloggten Person, lässt sich der Klarname aus der
+// Session ableiten — für fremde Altanträge bleibt es beim Login-Namen.
+function erstellerAnzeige(a) {
+  if (a.erstelltVonName) return a.erstelltVonName;
+  if (currentUser && a.erstelltVon && a.erstelltVon === currentUser.username) {
+    const name = aktuellerKlarname();
+    if (name) return name;
+  }
+  return a.erstelltVon || "";
+}
+
 // ---------------------------------------------------------------------------
 // Hilfsfunktionen
 // ---------------------------------------------------------------------------
@@ -136,6 +155,7 @@ function leererAntrag() {
   return {
     id: neueId(),
     erstelltVon: currentUser ? currentUser.username : "",
+    erstelltVonName: aktuellerKlarname(),
     erstelltAm: new Date().toISOString(),
     geaendertAm: new Date().toISOString(),
     status: "entwurf",
@@ -181,6 +201,11 @@ function normalizeData(raw) {
   data.antraege = liste.map((a) => {
     const n = Object.assign({}, vorlage, a);
     n.id = a.id || neueId();
+    // Wer den Antrag angelegt hat, darf NIE aus der Vorlage kommen — die trägt
+    // die gerade eingeloggte Person, und ein Altantrag ohne diese Felder würde
+    // ihr dadurch stillschweigend zugeschrieben.
+    n.erstelltVon = typeof a.erstelltVon === "string" ? a.erstelltVon : "";
+    n.erstelltVonName = typeof a.erstelltVonName === "string" ? a.erstelltVonName : "";
     n.leiter = Object.assign({ name: "", anschrift: ["", "", ""], telefon: "", email: "" }, a.leiter);
     n.vertreter = Object.assign({ name: "", anschrift: ["", "", ""], telefon: "", email: "" }, a.vertreter);
     n.leiter.anschrift = Array.isArray(n.leiter.anschrift) ? n.leiter.anschrift.slice(0, 3) : ["", "", ""];
@@ -255,6 +280,7 @@ function antragRowHtml(a) {
   const datum = datumAnzeige(a.veranstaltung && a.veranstaltung.datum);
   const titel = a.bezeichnung || "(ohne Bezeichnung)";
   const ort = [a.veranstaltungsort, a.raeume].filter(Boolean).join(" · ");
+  const ersteller = erstellerAnzeige(a);
   return `
     <div class="antrag-row" data-id="${escapeHtml(a.id)}">
       <div class="antrag-row-main">
@@ -262,6 +288,7 @@ function antragRowHtml(a) {
         <div class="antrag-row-meta">
           ${datum ? "📅 " + escapeHtml(datum) : '<span class="muted">ohne Datum</span>'}
           ${ort ? " · " + escapeHtml(ort) : ""}
+          ${ersteller ? " · 👤 " + escapeHtml(ersteller) : ""}
         </div>
       </div>
       <span class="status-pill status-${escapeHtml(a.status)}">${escapeHtml(STATUS_LABELS[a.status] || a.status)}</span>
@@ -337,9 +364,10 @@ function fuelleFormular(a) {
   const pill = el("antrag-status-pill");
   pill.textContent = STATUS_LABELS[a.status] || a.status;
   pill.className = "status-pill status-" + a.status;
+  const ersteller = erstellerAnzeige(a);
   el("antrag-meta").textContent =
     "Angelegt am " + kurzDatum(a.erstelltAm)
-    + (a.erstelltVon ? " von " + a.erstelltVon : "");
+    + (ersteller ? " von " + ersteller : "");
 
   const setV = (id, v) => { const e = el(id); if (e) e.value = v === null || v === undefined ? "" : v; };
 
@@ -713,6 +741,7 @@ function kopiereAntrag() {
   kopie.erstelltAm = new Date().toISOString();
   kopie.geaendertAm = kopie.erstelltAm;
   kopie.erstelltVon = currentUser ? currentUser.username : "";
+  kopie.erstelltVonName = aktuellerKlarname();
   kopie.bezeichnung = (a.bezeichnung || "Antrag") + " (Kopie)";
   // Termine bewusst leeren: eine Kopie ist eine neue Veranstaltung, und ein
   // versehentlich übernommenes Datum wäre im Antrag ans Amt schwer zu bemerken.
@@ -882,8 +911,7 @@ async function boot() {
 
   el("connect-screen").style.display = "none";
   el("app-shell").style.display = "";
-  const name = [currentUser.vorname, currentUser.nachname].filter(Boolean).join(" ");
-  el("header-user").textContent = name || currentUser.username || "";
+  el("header-user").textContent = aktuellerKlarname() || currentUser.username || "";
 
   renderUebersicht();
   setzeSchreibschutz();
