@@ -475,6 +475,8 @@ function bindeFormular() {
       pill.className = "status-pill status-" + a.status;
     }
     scheduleSave();
+    const nameTreffer = ev.target.id && ev.target.id.match(/^f-(leiter|vertreter)-name$/);
+    if (nameTreffer) kontaktAutofill(a, nameTreffer[1]);
   });
 }
 
@@ -526,6 +528,54 @@ function uebernehmeFeld(a, t) {
     case "f-notiz": a.notiz = v; return true;
     default: return false;
   }
+}
+
+// Trägt nach dem Eintippen eines bekannten Trainer-Namens dessen Kontaktdaten
+// aus den Trainerdaten in die noch LEEREN Felder der Rolle ein (Straße,
+// PLZ/Ort, Telefon, E-Mail) — bereits Ausgefülltes wird nie überschrieben,
+// abweichende Angaben je Veranstaltung bleiben also möglich. Reines
+// Bequemlichkeits-Prefill: kein Treffer, kein Netz oder ein Worker ohne die
+// Aktion heißt still "nichts tun". Serverseitig liefert
+// raumnutzung-kontakt-lookup nur diese Kontaktfelder und nur an
+// Raumnutzung-Bearbeiter, nie den vollen Trainerdaten-Datensatz.
+async function kontaktAutofill(a, rolle) {
+  const p = a[rolle];
+  const name = (p.name || "").trim();
+  // Ohne zwei Namensteile kann der Server nichts abgleichen; und sind alle
+  // Zielfelder schon gefüllt (z.B. beim bloßen Korrigieren des Namens), gibt
+  // es nichts zu tun — beides spart den Request.
+  if (!name || !/[\s,]/.test(name)) return;
+  const zieleLeer = !(p.anschrift[0] || "").trim() || !(p.anschrift[1] || "").trim()
+    || !(p.telefon || "").trim() || !(p.email || "").trim();
+  if (!zieleLeer) return;
+
+  const antragId = a.id;
+  let res;
+  try {
+    res = await gatewayRequest({ action: "raumnutzung-kontakt-lookup", name });
+  } catch (_) { return; }
+  const t = res && res.treffer;
+  if (!t) return;
+  // Nach dem await kann die Person längst den Antrag gewechselt haben (gleiche
+  // Falle wie bei zeigeUnterschrift) — dann nichts mehr anfassen.
+  if (currentAntragId !== antragId || !canEdit()) return;
+
+  const zeile2 = [t.plz, t.ort].filter(Boolean).join(" ");
+  let geaendert = false;
+  if (!(p.anschrift[0] || "").trim() && t.strasse) { p.anschrift[0] = t.strasse; geaendert = true; }
+  if (!(p.anschrift[1] || "").trim() && zeile2) { p.anschrift[1] = zeile2; geaendert = true; }
+  if (!(p.telefon || "").trim() && t.telefon) { p.telefon = t.telefon; geaendert = true; }
+  if (!(p.email || "").trim() && t.email) { p.email = t.email; geaendert = true; }
+  if (!geaendert) return;
+
+  const setV = (id, v) => { const e = el(id); if (e) e.value = v; };
+  setV(`f-${rolle}-anschrift-0`, p.anschrift[0]);
+  setV(`f-${rolle}-anschrift-1`, p.anschrift[1]);
+  setV(`f-${rolle}-telefon`, p.telefon);
+  setV(`f-${rolle}-email`, p.email);
+  a.geaendertAm = new Date().toISOString();
+  scheduleSave();
+  setSaveHint("Kontaktdaten aus den Trainerdaten übernommen — wird gespeichert…");
 }
 
 // ---------------------------------------------------------------------------

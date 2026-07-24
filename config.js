@@ -2,6 +2,17 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.2",
+    groups: [
+      {
+        title: "Verbesserungen",
+        items: [
+          "Wer bei Veranstaltungsleitung oder Vertretung einen Namen einträgt, der in den Trainerdaten hinterlegt ist, bekommt Anschrift, Telefonnummer und E-Mail automatisch eingetragen — aber nur in noch leere Felder, bereits Ausgefülltes bleibt unangetastet. Vertauschte Vor-/Nachnamen werden dabei toleriert."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.1",
     groups: [
       {
