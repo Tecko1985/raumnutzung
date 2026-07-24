@@ -7,7 +7,8 @@ const APP_CHANGELOG = [
       {
         title: "Verbesserungen",
         items: [
-          "Wer bei Veranstaltungsleitung oder Vertretung einen Namen einträgt, der in den Trainerdaten hinterlegt ist, bekommt Anschrift, Telefonnummer und E-Mail automatisch eingetragen — aber nur in noch leere Felder, bereits Ausgefülltes bleibt unangetastet. Vertauschte Vor-/Nachnamen werden dabei toleriert."
+          "Wer bei Veranstaltungsleitung oder Vertretung einen Namen einträgt, der in den Trainerdaten hinterlegt ist, bekommt Anschrift, Telefonnummer und E-Mail automatisch eingetragen — aber nur in noch leere Felder, bereits Ausgefülltes bleibt unangetastet. Vertauschte Vor-/Nachnamen werden dabei toleriert.",
+          "In der Antragsliste steht jetzt die eingetragene Veranstaltungsleitung statt der Person, die den Antrag angelegt hat — wer angelegt hat, steht weiterhin im Kopf des geöffneten Antrags."
         ]
       }
     ]

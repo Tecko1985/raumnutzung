@@ -280,7 +280,11 @@ function antragRowHtml(a) {
   const datum = datumAnzeige(a.veranstaltung && a.veranstaltung.datum);
   const titel = a.bezeichnung || "(ohne Bezeichnung)";
   const ort = [a.veranstaltungsort, a.raeume].filter(Boolean).join(" · ");
-  const ersteller = erstellerAnzeige(a);
+  // In der Liste zählt die Veranstaltungsleitung (fürs Amt relevant), nicht wer
+  // den Datensatz angelegt hat (Michel 2026-07-24) — wer angelegt hat, steht
+  // weiter im Kopf des geöffneten Antrags. Ohne Leitung entfällt die Angabe,
+  // bewusst KEIN Rückfall auf den Ersteller.
+  const leitung = ((a.leiter && a.leiter.name) || "").trim();
   return `
     <div class="antrag-row" data-id="${escapeHtml(a.id)}">
       <div class="antrag-row-main">
@@ -288,7 +292,7 @@ function antragRowHtml(a) {
         <div class="antrag-row-meta">
           ${datum ? "📅 " + escapeHtml(datum) : '<span class="muted">ohne Datum</span>'}
           ${ort ? " · " + escapeHtml(ort) : ""}
-          ${ersteller ? " · 👤 " + escapeHtml(ersteller) : ""}
+          ${leitung ? " · 👤 " + escapeHtml(leitung) : ""}
         </div>
       </div>
       <span class="status-pill status-${escapeHtml(a.status)}">${escapeHtml(STATUS_LABELS[a.status] || a.status)}</span>
