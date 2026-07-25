@@ -384,6 +384,14 @@ button.btn.danger:hover { background: #a5311f; }
   border-radius: 8px;
   background: var(--white);
   touch-action: none;          /* sonst scrollt die Seite beim Unterschreiben */
+  /* iOS-Safari braucht mehr als touch-action: Bleibt die Textauswahl erlaubt,
+     startet ein Wisch mit kurzem Halten die Auswahl-/Lupen-Geste, Safari schickt
+     ein pointercancel und der Strich reisst mitten in der Unterschrift ab. Das
+     Callout-Menue („Kopieren/Teilen“) kommt aus derselben Ecke. */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
   cursor: crosshair;
   display: block;
 }

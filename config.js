@@ -2,6 +2,20 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.3",
+    groups: [
+      {
+        title: "Fehlerbehebungen",
+        items: [
+          "Auf älteren iPhones und iPads ließ sich nicht unterschreiben. Je nach iOS-Version reagierte die Fläche überhaupt nicht auf den Finger, oder die Unterschrift wurde nie gespeichert — im zweiten Fall speicherte die App anschließend auch die übrigen Angaben des Antrags nicht mehr. Beides ist behoben.",
+          "Auf dem iPhone konnte die Auswahl-Lupe von iOS mitten in der Unterschrift dazwischenfunken und den Strich abreißen lassen.",
+          "Lässt sich das Unterschriftsbild nicht hochladen — etwa bei schlechter Verbindung im Ausland —, steht das jetzt neben der Fläche, statt dass die App wortlos „Gespeichert“ meldet. Die Unterschrift geht dabei nicht verloren, sie wird beim nächsten Speichern erneut hochgeladen.",
+          "Wer kein Bearbeiten-Recht hat, sieht den Grund jetzt direkt an der gesperrten Unterschriftsfläche."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.2",
     groups: [
       {

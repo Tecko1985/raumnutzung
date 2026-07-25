@@ -33,6 +33,10 @@ async function doSave() {
     await lagereUnterschriftenAus();
     await gatewaySave(appData);
     setSaveHint("Gespeichert " + new Date().toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" }));
+    // Der Auslager-Versuch von eben kann fehlgeschlagen sein, ohne dass der Save
+    // scheitert — dann steht es jetzt am Unterschriftsfeld.
+    const offen = findeAntrag(currentAntragId);
+    if (offen) setUnterschriftStatus(offen);
   } catch (e) {
     if (e instanceof NotLoggedInError) {
       showConnectScreen(e.message);
@@ -103,6 +107,26 @@ function el(id) { return document.getElementById(id); }
 
 function neueId() {
   return "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+// Id für eine ausgelagerte Datei (Unterschrift). Der Worker prüft sie gegen
+// FILE_ID_RE und akzeptiert AUSSCHLIESSLICH das UUID-Format — neueId() taugt
+// hier also nicht. crypto.randomUUID() gibt es aber erst ab Safari 15.4; auf
+// älterem iOS warf die Zeile bisher einen TypeError, der den kompletten Save
+// abbrach (die Unterschrift blieb inline, jeder weitere Save lief in denselben
+// Fehler). crypto.getRandomValues gibt es dort seit jeher, daraus bauen wir das
+// Format selbst zusammen: 16 Zufallsbytes, Version 4 und Variante gesetzt.
+function neueDateiId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  const b = new Uint8Array(16);
+  crypto.getRandomValues(b);
+  b[6] = (b[6] & 0x0f) | 0x40;
+  b[8] = (b[8] & 0x3f) | 0x80;
+  const hex = Array.from(b, (x) => x.toString(16).padStart(2, "0")).join("");
+  return hex.slice(0, 8) + "-" + hex.slice(8, 12) + "-" + hex.slice(12, 16) +
+         "-" + hex.slice(16, 20) + "-" + hex.slice(20);
 }
 
 // Vorbelegung für „Ort, Datum“. Zweistellig mit führender Null — toLocale-
@@ -587,6 +611,10 @@ async function kontaktAutofill(a, rolle) {
 // ---------------------------------------------------------------------------
 let sigZeichnet = false;
 let sigCtx = null;
+// Ein Upload der Unterschrift ist beim letzten Speichern gescheitert (siehe
+// lagereUnterschriftenAus). Steuert nur den Hinweistext, die Daten selbst
+// liegen dann inline in der JSON.
+let unterschriftUploadOffen = false;
 
 function initUnterschrift() {
   const canvas = el("sig-canvas");
@@ -596,42 +624,87 @@ function initUnterschrift() {
   sigCtx.lineJoin = "round";
   sigCtx.strokeStyle = "#12233f";
 
-  // Pointer-Events decken Maus, Finger und Stift in einem Satz Handler ab.
-  const punkt = (ev) => {
+  // Bildschirm- in Bitmap-Koordinaten: die Fläche wird per CSS skaliert (auf dem
+  // Handy schmaler als 600 px), die Bitmap bleibt fest 600x180.
+  const punkt = (clientX, clientY) => {
     const r = canvas.getBoundingClientRect();
     return {
-      x: (ev.clientX - r.left) * (canvas.width / r.width),
-      y: (ev.clientY - r.top) * (canvas.height / r.height)
+      x: (clientX - r.left) * (canvas.width / r.width),
+      y: (clientY - r.top) * (canvas.height / r.height)
     };
   };
 
-  canvas.addEventListener("pointerdown", (ev) => {
+  // Die eigentliche Zeichenlogik, unabhängig von der Event-Quelle — darunter
+  // liegen zwei Sätze Handler (siehe unten).
+  const beginne = (clientX, clientY) => {
     if (!canEdit()) return;
     sigZeichnet = true;
-    canvas.setPointerCapture(ev.pointerId);
-    const p = punkt(ev);
+    const p = punkt(clientX, clientY);
     sigCtx.beginPath();
     sigCtx.moveTo(p.x, p.y);
     el("sig-hint").style.display = "none";
-    ev.preventDefault();
-  });
+  };
 
-  canvas.addEventListener("pointermove", (ev) => {
+  const ziehe = (clientX, clientY) => {
     if (!sigZeichnet) return;
-    const p = punkt(ev);
+    const p = punkt(clientX, clientY);
     sigCtx.lineTo(p.x, p.y);
     sigCtx.stroke();
-    ev.preventDefault();
-  });
+  };
 
   const beenden = () => {
     if (!sigZeichnet) return;
     sigZeichnet = false;
     uebernehmeUnterschrift();
   };
-  canvas.addEventListener("pointerup", beenden);
-  canvas.addEventListener("pointercancel", beenden);
-  canvas.addEventListener("pointerleave", beenden);
+
+  if (window.PointerEvent) {
+    // Der Normalfall: Pointer-Events decken Maus, Finger und Stift in einem Satz
+    // Handler ab.
+    canvas.addEventListener("pointerdown", (ev) => {
+      if (!canEdit()) return;
+      // Capture hält den Strich am Canvas, auch wenn der Finger über den Rand
+      // hinauswandert. Ältere WebKit-Versionen werfen hier — dann eben ohne
+      // Capture, gezeichnet wird trotzdem. Vorher riss ein Wurf an dieser Stelle
+      // den ganzen Handler ab und es kam überhaupt kein Strich zustande.
+      try { canvas.setPointerCapture(ev.pointerId); } catch (_) {}
+      beginne(ev.clientX, ev.clientY);
+      ev.preventDefault();
+    });
+    canvas.addEventListener("pointermove", (ev) => {
+      if (!sigZeichnet) return;
+      ziehe(ev.clientX, ev.clientY);
+      ev.preventDefault();
+    });
+    canvas.addEventListener("pointerup", beenden);
+    canvas.addEventListener("pointercancel", beenden);
+    canvas.addEventListener("pointerleave", beenden);
+  } else {
+    // iOS bis einschließlich 12 kennt keine Pointer-Events (die kamen mit
+    // Safari 13). Die App selbst läuft dort — sie benutzt weder ?. noch ?? —,
+    // die Unterschriftsfläche wäre ohne diesen Zweig aber vollständig tot: Seite
+    // öffnet, Formular ausfüllbar, nur unterschreiben geht nicht.
+    // passive:false, weil preventDefault sonst wirkungslos ist und Safari die
+    // Geste als Scrollen wegnimmt.
+    canvas.addEventListener("touchstart", (ev) => {
+      const t = ev.changedTouches[0];
+      if (!t) return;
+      beginne(t.clientX, t.clientY);
+      if (sigZeichnet) ev.preventDefault();
+    }, { passive: false });
+    canvas.addEventListener("touchmove", (ev) => {
+      const t = ev.changedTouches[0];
+      if (!t || !sigZeichnet) return;
+      ziehe(t.clientX, t.clientY);
+      ev.preventDefault();
+    }, { passive: false });
+    canvas.addEventListener("touchend", beenden);
+    canvas.addEventListener("touchcancel", beenden);
+    // Dazu die Maus, für alte Desktop-Browser ohne Pointer-Events.
+    canvas.addEventListener("mousedown", (ev) => { beginne(ev.clientX, ev.clientY); });
+    canvas.addEventListener("mousemove", (ev) => { ziehe(ev.clientX, ev.clientY); });
+    window.addEventListener("mouseup", beenden);
+  }
 
   el("btn-sig-clear").addEventListener("click", loescheUnterschrift);
 }
@@ -710,14 +783,27 @@ function leereCanvas() {
 function setUnterschriftStatus(a) {
   const s = el("sig-status");
   if (!s) return;
+  s.className = "save-hint";
+  // Ohne Bearbeiten-Recht ist die Fläche gesperrt. Den Grund direkt daneben
+  // schreiben: der allgemeine „Nur Lesezugriff“-Hinweis steht ganz woanders auf
+  // der Seite, auf dem Handy sieht man an der grauen Fläche sonst nur, DASS es
+  // nicht geht, und nicht warum.
+  if (!canEdit()) {
+    s.textContent = "Unterschreiben ist nur mit Bearbeiten-Recht möglich.";
+    return;
+  }
   if (a.unterschrift || a.unterschriftFileId) {
     s.textContent = a.unterschriebenAm
       ? "Unterschrieben am " + kurzDatum(a.unterschriebenAm)
       : "Unterschrift vorhanden";
-    s.className = "save-hint";
+    // Inline + gescheiterter Upload: die Unterschrift ist in der JSON gesichert,
+    // aber noch nicht als Datei in der Cloud. Sichtbar machen statt schweigen.
+    if (unterschriftUploadOffen && a.unterschrift) {
+      s.textContent += " — Bild noch nicht hochgeladen, wird erneut versucht";
+      s.className = "save-hint error";
+    }
   } else {
     s.textContent = "Noch nicht unterschrieben";
-    s.className = "save-hint";
   }
 }
 
@@ -761,16 +847,27 @@ async function zeigeUnterschrift(a) {
 // in der JSON — alter Zustand, kein Datenverlust, nächster Versuch beim
 // nächsten Speichern.
 async function lagereUnterschriftenAus() {
+  unterschriftUploadOffen = false;
   for (const a of appData.antraege) {
     if (!a.unterschrift || !/^data:image\/png;base64,/.test(a.unterschrift)) continue;
-    // Stabile Id je Antrag: überschreiben statt bei jedem Strich eine neue Datei.
-    const fileId = a.unterschriftFileId || crypto.randomUUID();
-    const base64 = a.unterschrift.split(",")[1] || "";
+    // ALLES in den try: nicht nur der Upload kann scheitern, auch das Erzeugen
+    // der Id. Fliegt hier etwas heraus, bricht der ganze doSave() ab und der
+    // Antrag wird überhaupt nicht mehr gespeichert — die Unterschrift bleibt ja
+    // inline und der nächste Versuch läuft in denselben Fehler.
     try {
+      // Stabile Id je Antrag: überschreiben statt bei jedem Strich eine neue Datei.
+      const fileId = a.unterschriftFileId || neueDateiId();
+      const base64 = a.unterschrift.split(",")[1] || "";
       await gatewayFilePut(fileId, "unterschrift.png", base64);
       a.unterschriftFileId = fileId;
       a.unterschrift = "";
-    } catch (_) { /* bleibt inline, wird beim nächsten Speichern erneut versucht */ }
+    } catch (_) {
+      // Bleibt inline in der JSON — kein Datenverlust, nächster Versuch beim
+      // nächsten Speichern. Früher schluckte dieser catch den Fehler spurlos:
+      // die App meldete „Gespeichert“, während die Unterschrift nie in der
+      // Cloud ankam. Bei einer Rückfrage aus der Ferne sah man dann nichts.
+      unterschriftUploadOffen = true;
+    }
   }
 }
 
