@@ -35,7 +35,8 @@ mitwandert.
 - Das erzeugte PDF bleibt ausfüllbar. Fragt das Amt nach, lässt sich eine
   Kleinigkeit direkt im PDF-Programm ändern.
 - Die Anträge enthalten private Anschriften und Telefonnummern. Die App ist
-  deshalb nur für die Bearbeiter-Gruppe sichtbar.
+  deshalb nur für einen begrenzten Kreis sichtbar; wer sie sehen und bearbeiten
+  darf, steuert die Tools-Übersicht über die normalen Gruppen.
 
 ## Technik
 

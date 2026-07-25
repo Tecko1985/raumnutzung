@@ -447,7 +447,7 @@ function setzeSchreibschutz() {
   if (canvas) canvas.classList.toggle("gesperrt", gesperrt);
   const neu = el("btn-neuer-antrag");
   if (neu) neu.style.display = gesperrt ? "none" : "";
-  if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen sind der Bearbeiter-Gruppe vorbehalten.");
+  if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen brauchen das Bearbeiten-Recht für dieses Tool.");
 }
 
 function aktualisiereSumme() {
