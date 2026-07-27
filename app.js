@@ -494,33 +494,31 @@ function setzeSchreibschutz() {
   const gesperrt = !canEdit();
   document.querySelectorAll("#tab-antrag input, #tab-antrag textarea, #tab-antrag select")
     .forEach((e) => { e.disabled = gesperrt; });
-  // btn-pdf und btn-mail hängen mit an dieser Liste (flottenweite Regel seit
-  // 2026-07-24: Export, Druck und PDF erst ab Bearbeiten). Beide erzeugen das
-  // vollständige Amtsformular mit den privaten Anschriften, Handynummern und
-  // E-Mail-Adressen von Veranstaltungsleitung und Vertretung — dieselben Daten,
-  // wegen derer diese App überhaupt eingeschränkt sichtbar ist. Ohne das Gate
-  // lief die Administrieren-Schranke am Sammelexport teilweise leer: Wer die
-  // Anträge einzeln durchklickt, kam an dasselbe Material, nur langsamer.
-  // Beide Knöpfe stehen im Markup auf display:none, damit sie beim Laden nicht
-  // kurz aufblitzen, bevor die Rechte da sind. Beim Mailversand sitzt die echte
-  // Schranke im Worker (resolveEditPermission in handleRaumnutzungMailAntrag);
-  // die PDF-Erzeugung läuft dagegen vollständig im Browser über pdf-lib, dort
-  // IST dieses Gate die Schranke — die eigentliche Grenze davor ist die
-  // Tool-Sichtbarkeit des Gateways.
-  ["btn-loeschen", "btn-kopieren", "btn-sig-clear", "btn-mail", "btn-pdf"].forEach((id) => {
+  ["btn-loeschen", "btn-kopieren", "btn-sig-clear"].forEach((id) => {
     const b = el(id); if (b) b.style.display = gesperrt ? "none" : "";
   });
   const canvas = el("sig-canvas");
   if (canvas) canvas.classList.toggle("gesperrt", gesperrt);
   const neu = el("btn-neuer-antrag");
   if (neu) neu.style.display = gesperrt ? "none" : "";
-  // Der Sammelexport hängt an der dritten Stufe (Administrieren), nicht an
-  // Bearbeiten: Er zieht sämtliche Anträge samt privater Anschriften und
-  // Telefonnummern in einem Griff auf die Festplatte. Der Knopf steht im Markup
-  // auf display:none, damit er beim Laden nicht kurz aufblitzt, bevor die
-  // Rechte da sind.
-  const exp = el("btn-alle-pdfs");
-  if (exp) exp.style.display = canAdmin() ? "" : "none";
+  // ALLE drei Ausgabewege — Einzel-PDF, Mailversand ans Amt und Sammelexport —
+  // hängen an der dritten Stufe (Administrieren), nicht an Bearbeiten
+  // (Michel-Vorgabe 2026-07-27, verschärft gegenüber 1.6). Jeder von ihnen gibt
+  // das vollständige Amtsformular mit den privaten Anschriften, Handynummern und
+  // E-Mail-Adressen von Veranstaltungsleitung und Vertretung heraus — dieselben
+  // Daten, wegen derer die App überhaupt eingeschränkt sichtbar ist. Die
+  // Arbeitsteilung dahinter: Trainer füllen die Anträge aus (Bearbeiten),
+  // eingereicht wird von der Geschäftsstelle (adminGroupIds), die im Mailtext
+  // auch unterschreibt.
+  // Alle drei stehen im Markup auf display:none, damit sie beim Laden nicht kurz
+  // aufblitzen, bevor die Rechte da sind. Beim Mailversand sitzt die echte
+  // Schranke im Worker (resolveAdminPermission in handleRaumnutzungMailAntrag);
+  // PDF-Erzeugung und ZIP laufen vollständig im Browser über pdf-lib, dort IST
+  // dieses Gate die Schranke — die Grenze davor ist die Tool-Sichtbarkeit.
+  const darfAusgeben = canAdmin();
+  ["btn-pdf", "btn-mail", "btn-alle-pdfs"].forEach((id) => {
+    const b = el(id); if (b) b.style.display = darfAusgeben ? "" : "none";
+  });
   if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen brauchen das Bearbeiten-Recht für dieses Tool.");
 }
 

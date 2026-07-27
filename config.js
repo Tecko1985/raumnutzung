@@ -2,6 +2,19 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.7",
+    groups: [
+      {
+        title: "Rechte",
+        items: [
+          "„Amtliches PDF erzeugen“ und „Per E-Mail senden“ sind jetzt dem Recht „Administrieren“ vorbehalten — bisher genügte „Bearbeiten“. Damit hängen alle drei Ausgabewege an derselben Stufe wie der Sammelexport.",
+          "Die Arbeitsteilung dahinter: Anträge ausfüllen und pflegen können weiterhin alle mit Bearbeiten-Recht. Das fertige Formular ans Amt herausgeben — als Download oder per E-Mail — ist Sache der Geschäftsstelle.",
+          "Der Versand ist auch serverseitig auf diese Stufe beschränkt, nicht nur der Knopf ausgeblendet."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.6",
     groups: [
       {
