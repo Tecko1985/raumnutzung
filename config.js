@@ -2,6 +2,18 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.6",
+    groups: [
+      {
+        title: "Rechte",
+        items: [
+          "„Amtliches PDF erzeugen“ ist jetzt — wie „Per E-Mail senden“ — nur noch für Personen mit Bearbeiten-Recht sichtbar. Wer die Anträge nur ansehen darf, kann das ausgefüllte Amtsformular nicht mehr herunterladen: Es enthält die vollständigen Anschriften, Handynummern und E-Mail-Adressen von Veranstaltungsleitung und Vertretung.",
+          "Damit greift auch die Beschränkung des Sammelexports wieder vollständig. Bisher ließ sich derselbe Datenbestand umgehen, indem man die Anträge einzeln öffnete und einzeln als PDF erzeugte."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.5",
     groups: [
       {

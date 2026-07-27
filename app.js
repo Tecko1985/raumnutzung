@@ -494,12 +494,20 @@ function setzeSchreibschutz() {
   const gesperrt = !canEdit();
   document.querySelectorAll("#tab-antrag input, #tab-antrag textarea, #tab-antrag select")
     .forEach((e) => { e.disabled = gesperrt; });
-  // btn-mail hängt mit an dieser Liste: Den Antrag beim Amt einzureichen ist eine
-  // Bearbeiter-Handlung, keine des Nur-Sehers. Der Knopf steht im Markup auf
-  // display:none, damit er beim Laden nicht kurz aufblitzt, bevor die Rechte da
-  // sind — das Gate hier ist die Anzeige-Seite, die echte Schranke sitzt im
-  // Worker (resolveEditPermission in handleRaumnutzungMailAntrag).
-  ["btn-loeschen", "btn-kopieren", "btn-sig-clear", "btn-mail"].forEach((id) => {
+  // btn-pdf und btn-mail hängen mit an dieser Liste (flottenweite Regel seit
+  // 2026-07-24: Export, Druck und PDF erst ab Bearbeiten). Beide erzeugen das
+  // vollständige Amtsformular mit den privaten Anschriften, Handynummern und
+  // E-Mail-Adressen von Veranstaltungsleitung und Vertretung — dieselben Daten,
+  // wegen derer diese App überhaupt eingeschränkt sichtbar ist. Ohne das Gate
+  // lief die Administrieren-Schranke am Sammelexport teilweise leer: Wer die
+  // Anträge einzeln durchklickt, kam an dasselbe Material, nur langsamer.
+  // Beide Knöpfe stehen im Markup auf display:none, damit sie beim Laden nicht
+  // kurz aufblitzen, bevor die Rechte da sind. Beim Mailversand sitzt die echte
+  // Schranke im Worker (resolveEditPermission in handleRaumnutzungMailAntrag);
+  // die PDF-Erzeugung läuft dagegen vollständig im Browser über pdf-lib, dort
+  // IST dieses Gate die Schranke — die eigentliche Grenze davor ist die
+  // Tool-Sichtbarkeit des Gateways.
+  ["btn-loeschen", "btn-kopieren", "btn-sig-clear", "btn-mail", "btn-pdf"].forEach((id) => {
     const b = el(id); if (b) b.style.display = gesperrt ? "none" : "";
   });
   const canvas = el("sig-canvas");
