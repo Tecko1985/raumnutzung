@@ -2,6 +2,20 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.5",
+    groups: [
+      {
+        title: "Neu",
+        items: [
+          "Neben „Amtliches PDF erzeugen“ steht jetzt „Per E-Mail senden“: Der Knopf erzeugt dasselbe ausgefüllte Original-PDF und schickt es direkt an das Schulverwaltungsamt des Landkreises — eine Kopie geht an die Geschäftsstelle. Betreff und Anschreiben sind fest hinterlegt, es muss nichts mehr von Hand angehängt oder getippt werden.",
+          "Vor dem Versand wird noch einmal nachgefragt, mit welchem Antrag gesendet wird. Danach steht in der Bestätigung, an welche Adressen die Mail gegangen ist.",
+          "Lässt sich die Mail nicht zustellen, sagt die App das deutlich — das PDF kann dann wie bisher heruntergeladen und von Hand verschickt werden.",
+          "Der Knopf erscheint nur für Personen mit Bearbeiten-Recht; wer die Anträge nur ansehen darf, kann sie nicht einreichen."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.4",
     groups: [
       {

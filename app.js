@@ -494,7 +494,12 @@ function setzeSchreibschutz() {
   const gesperrt = !canEdit();
   document.querySelectorAll("#tab-antrag input, #tab-antrag textarea, #tab-antrag select")
     .forEach((e) => { e.disabled = gesperrt; });
-  ["btn-loeschen", "btn-kopieren", "btn-sig-clear"].forEach((id) => {
+  // btn-mail hängt mit an dieser Liste: Den Antrag beim Amt einzureichen ist eine
+  // Bearbeiter-Handlung, keine des Nur-Sehers. Der Knopf steht im Markup auf
+  // display:none, damit er beim Laden nicht kurz aufblitzt, bevor die Rechte da
+  // sind — das Gate hier ist die Anzeige-Seite, die echte Schranke sitzt im
+  // Worker (resolveEditPermission in handleRaumnutzungMailAntrag).
+  ["btn-loeschen", "btn-kopieren", "btn-sig-clear", "btn-mail"].forEach((id) => {
     const b = el(id); if (b) b.style.display = gesperrt ? "none" : "";
   });
   const canvas = el("sig-canvas");
@@ -1122,6 +1127,71 @@ function zipDateiname(anzahl) {
   return `Raumnutzung_Antraege_${anzahl}_${iso}.zip`;
 }
 
+// Erzeugt dasselbe PDF wie erzeugePdf() und schickt es über den Gateway ans Amt.
+// Empfänger, CC, Betreff und Mailtext stehen bewusst NUR im Worker
+// (RAUMNUTZUNG_MAIL_*, siehe handleRaumnutzungMailAntrag): Käme die Zieladresse
+// von hier, wäre die offene Worker-URL für jeden Bearbeiter ein Versandweg an
+// beliebige Empfänger — abgeschickt unter dem Absender des Vereins.
+async function sendePerMail() {
+  const a = findeAntrag(currentAntragId);
+  if (!a || !canEdit()) return;
+  const bezeichnung = (a.bezeichnung || "").trim() || "ohne Bezeichnung";
+  if (!confirm("Den Antrag „" + bezeichnung + "“ jetzt als PDF an das Schulverwaltungsamt senden?\n\n"
+    + "Eine Kopie geht an die Geschäftsstelle.")) return;
+
+  const btn = el("btn-mail");
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Wird gesendet…";
+  try {
+    flushSave();
+    // Wie in erzeugePdf: die Unterschrift kann bereits ausgelagert sein und muss
+    // fürs PDF erst geholt werden.
+    let unterschrift = a.unterschrift;
+    if (!unterschrift && a.unterschriftFileId) {
+      unterschrift = await gatewayFileGetDataUrl(a.unterschriftFileId).catch(() => "");
+    }
+    const { blob, fehler } = await erzeugeAntragsPdf(a, unterschrift);
+    const res = await gatewayRequest({
+      action: "raumnutzung-mail-antrag",
+      pdfBase64: await blobZuBase64(blob),
+      dateiname: pdfDateiname(a)
+    });
+    let text = "Der Antrag wurde an " + ((res && res.to) || "das Amt") + " gesendet";
+    text += (res && res.cc) ? ",\nin Kopie an " + res.cc + "." : ".";
+    if (fehler.length) {
+      text += "\n\nBeim Erzeugen des PDFs gab es Hinweise:\n• " + fehler.join("\n• ");
+    }
+    alert(text);
+    setSaveHint("Antrag per E-Mail versendet.");
+  } catch (e) {
+    alert("Der Antrag konnte nicht versendet werden: " + e.message
+      + "\n\nDas PDF lässt sich weiterhin über „Amtliches PDF erzeugen“ herunterladen"
+      + " und von Hand verschicken.");
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
+  }
+}
+
+// Blob -> reines base64 ohne den data:-Präfix, so wie der Worker den Anhang
+// erwartet. Über FileReader statt btoa(String.fromCharCode(...bytes)): Der
+// Spread-Weg reicht bei einem mehrere hundert Kilobyte großen PDF
+// Hunderttausende Argumente an fromCharCode und sprengt den Aufruf-Stack.
+function blobZuBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const leser = new FileReader();
+    leser.onload = () => {
+      const s = String(leser.result || "");
+      const komma = s.indexOf(",");
+      if (komma < 0) { reject(new Error("PDF konnte nicht kodiert werden")); return; }
+      resolve(s.slice(komma + 1));
+    };
+    leser.onerror = () => reject(new Error("PDF konnte nicht gelesen werden"));
+    leser.readAsDataURL(blob);
+  });
+}
+
 // Öffnet einen Blob in einem neuen Tab. Das Fenster wird synchron aufgemacht
 // und erst danach befüllt (siehe erzeugePdf), gleiche Konvention wie in
 // Trainerdaten und personalakte.
@@ -1235,6 +1305,7 @@ async function boot() {
   el("btn-alle-pdfs").addEventListener("click", exportiereAllePdfs);
   el("btn-zurueck").addEventListener("click", () => switchTab("uebersicht"));
   el("btn-pdf").addEventListener("click", erzeugePdf);
+  el("btn-mail").addEventListener("click", sendePerMail);
   el("btn-kopieren").addEventListener("click", kopiereAntrag);
   el("btn-loeschen").addEventListener("click", loescheAntrag);
   el("uebersicht-status-filter").addEventListener("change", (ev) => {
