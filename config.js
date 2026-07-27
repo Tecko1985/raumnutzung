@@ -2,6 +2,19 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.4",
+    groups: [
+      {
+        title: "Neu",
+        items: [
+          "Wer für dieses Tool das Recht „Administrieren“ hat, findet über der Antragsliste den Knopf „Alle als PDF-ZIP“: Er erzeugt aus jedem angezeigten Antrag das ausgefüllte Original-PDF und packt alle als einzelne Dateien in ein ZIP-Archiv — ein Download statt einer Datei pro Antrag.",
+          "Exportiert wird immer genau das, was die Liste gerade zeigt. Steht der Status-Filter auf „Eingereicht“, sind auch nur diese Anträge im Archiv; der Knopf nennt die Anzahl, und vor dem Start wird noch einmal nachgefragt.",
+          "Lässt sich ein einzelner Antrag nicht erzeugen, laufen die übrigen trotzdem durch — das Archiv wird erstellt und die betroffenen Anträge werden am Ende aufgelistet."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.3",
     groups: [
       {

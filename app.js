@@ -6,6 +6,10 @@ let appData = { antraege: [] };
 let currentUser = null;
 let currentAntragId = null;
 let currentFilter = "alle";
+// Läuft gerade ein Sammelexport? Solange das steht, gehört die Beschriftung des
+// Export-Knopfes dem Fortschritt und darf nicht vom Neurendern der Liste
+// überschrieben werden.
+let exportLaeuft = false;
 
 // ---------------------------------------------------------------------------
 // Speichern: debounced, mit In-Flight-Guard
@@ -73,6 +77,14 @@ function setSaveHint(text, isError) {
 // ---------------------------------------------------------------------------
 function canEdit() {
   return !!(currentUser && currentUser.canEdit);
+}
+
+// Dritte Rechte-Stufe („Administrieren“, adminGroupIds im Sichtbarkeits-Panel).
+// Der Gateway liefert das Feld seit 2026-07-24 additiv in me/dav-load mit; fehlt
+// es (alter Worker), gilt es als nicht erteilt — die Admin-Funktion ist dann
+// einfach nicht da, statt versehentlich für alle offen zu stehen.
+function canAdmin() {
+  return !!(currentUser && currentUser.canAdmin);
 }
 
 // Klarname der eingeloggten Person, leer wenn der Gateway keinen liefert.
@@ -287,17 +299,35 @@ function sortierteAntraege() {
   return liste;
 }
 
+// Die Anträge, die die Liste gerade zeigt. Eigene Funktion, weil der
+// Sammelexport genau dieselbe Auswahl packen muss wie die Ansicht — zwei
+// getrennte Filter-Ausdrücke wären früher oder später auseinandergelaufen und
+// der Export hätte still etwas anderes geliefert als das, was man vor sich hat.
+function sichtbareAntraege() {
+  return sortierteAntraege().filter(
+    (a) => currentFilter === "alle" || a.status === currentFilter
+  );
+}
+
 function renderUebersicht() {
   const rows = el("uebersicht-rows");
   const leer = el("uebersicht-empty");
-  const liste = sortierteAntraege().filter(
-    (a) => currentFilter === "alle" || a.status === currentFilter
-  );
+  const liste = sichtbareAntraege();
   leer.style.display = liste.length ? "none" : "";
   leer.textContent = appData.antraege.length
     ? "Keine Anträge mit diesem Status."
     : "Noch keine Anträge erfasst.";
   rows.innerHTML = liste.map(antragRowHtml).join("");
+  aktualisiereExportKnopf(liste.length);
+}
+
+// Der Knopf trägt die Anzahl, die er exportieren würde — sonst ist bei gesetztem
+// Status-Filter nicht zu sehen, dass „alle“ hier nur die angezeigten meint.
+function aktualisiereExportKnopf(anzahl) {
+  const btn = el("btn-alle-pdfs");
+  if (!btn || exportLaeuft) return;
+  btn.textContent = `Alle als PDF-ZIP (${anzahl})`;
+  btn.disabled = !anzahl;
 }
 
 function antragRowHtml(a) {
@@ -471,6 +501,13 @@ function setzeSchreibschutz() {
   if (canvas) canvas.classList.toggle("gesperrt", gesperrt);
   const neu = el("btn-neuer-antrag");
   if (neu) neu.style.display = gesperrt ? "none" : "";
+  // Der Sammelexport hängt an der dritten Stufe (Administrieren), nicht an
+  // Bearbeiten: Er zieht sämtliche Anträge samt privater Anschriften und
+  // Telefonnummern in einem Griff auf die Festplatte. Der Knopf steht im Markup
+  // auf display:none, damit er beim Laden nicht kurz aufblitzt, bevor die
+  // Rechte da sind.
+  const exp = el("btn-alle-pdfs");
+  if (exp) exp.style.display = canAdmin() ? "" : "none";
   if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen brauchen das Bearbeiten-Recht für dieses Tool.");
 }
 
@@ -967,6 +1004,124 @@ async function erzeugePdf() {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Sammelexport: jeder angezeigte Antrag als eigenes PDF, alle in einem ZIP
+// ---------------------------------------------------------------------------
+// JSZip steht bewusst NICHT fest im <head>: gebraucht wird es nur hier, und den
+// Weg geht ohnehin nur die Handvoll Leute mit Administrieren-Recht. Erster
+// Bedarf lädt nach, jeder weitere Aufruf bekommt dieselbe Promise (gleiches
+// Muster wie fotoauftraege und digitaler-stempel).
+let jsZipLadevorgang = null;
+function ladeJsZip() {
+  if (jsZipLadevorgang) return jsZipLadevorgang;
+  jsZipLadevorgang = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = "https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js";
+    s.onload = () => resolve();
+    s.onerror = () => {
+      jsZipLadevorgang = null; // nächster Versuch darf es erneut probieren
+      reject(new Error("ZIP-Bibliothek konnte nicht geladen werden (Internetverbindung nötig)."));
+    };
+    document.head.appendChild(s);
+  });
+  return jsZipLadevorgang;
+}
+
+// Zwei Anträge mit gleicher Bezeichnung UND gleichem Datum ergeben denselben
+// Dateinamen — im ZIP würde der zweite den ersten überschreiben und im Archiv
+// fehlte ein Antrag, ohne dass es auffiele.
+function eindeutigerDateiname(name, vergeben) {
+  if (!vergeben.has(name)) { vergeben.add(name); return name; }
+  const basis = name.replace(/\.pdf$/i, "");
+  let i = 2;
+  while (vergeben.has(`${basis}_${i}.pdf`)) i++;
+  const neu = `${basis}_${i}.pdf`;
+  vergeben.add(neu);
+  return neu;
+}
+
+async function exportiereAllePdfs() {
+  // Anzeige-Seite eines serverseitig nicht erzwingbaren Rechts: Die Daten sind
+  // beim Klick längst im Browser. Das Gate hält die Funktion aus der Oberfläche
+  // heraus, es ersetzt nicht die Sichtbarkeitsschranke des Gateways.
+  if (!canAdmin() || exportLaeuft) return;
+  const liste = sichtbareAntraege();
+  if (!liste.length) return;
+
+  const filterHinweis = currentFilter === "alle"
+    ? ""
+    : `\n\nDer Status-Filter steht auf „${STATUS_LABELS[currentFilter] || currentFilter}“ — `
+      + `andere Anträge sind nicht dabei (insgesamt erfasst: ${appData.antraege.length}).`;
+  if (!confirm(`${liste.length} ${liste.length === 1 ? "Antrag" : "Anträge"} als einzelne PDFs `
+    + `in ein ZIP-Archiv packen?${filterHinweis}\n\n`
+    + "Die Dateien enthalten Anschriften und Telefonnummern der Veranstaltungsleitung.")) return;
+
+  const btn = el("btn-alle-pdfs");
+  const originalText = btn.textContent;
+  exportLaeuft = true;
+  btn.disabled = true;
+  const probleme = [];
+  try {
+    btn.textContent = "ZIP-Bibliothek wird geladen…";
+    await ladeJsZip();
+    flushSave();
+
+    const zip = new JSZip();
+    const vergeben = new Set();
+    for (let i = 0; i < liste.length; i++) {
+      const a = liste[i];
+      btn.textContent = `PDF ${i + 1} von ${liste.length}…`;
+      const titel = a.bezeichnung || "(ohne Bezeichnung)";
+      try {
+        // Wie beim Einzelexport: ist die Unterschrift schon ausgelagert, steht
+        // im Datensatz nur die Datei-Id und das Bild muss erst geholt werden.
+        let unterschrift = a.unterschrift;
+        if (!unterschrift && a.unterschriftFileId) {
+          unterschrift = await gatewayFileGetDataUrl(a.unterschriftFileId).catch(() => "");
+        }
+        const { blob, fehler } = await erzeugeAntragsPdf(a, unterschrift);
+        zip.file(eindeutigerDateiname(pdfDateiname(a), vergeben), blob);
+        fehler.forEach((f) => probleme.push(`${titel}: ${f}`));
+      } catch (e) {
+        // Ein einzelner Antrag darf den Stapel nicht kippen — dieselbe Haltung
+        // wie bei setzeText/setzeHaken innerhalb eines PDFs.
+        probleme.push(`${titel}: konnte nicht erzeugt werden (${e.message})`);
+      }
+    }
+
+    if (!vergeben.size) {
+      alert("Es konnte kein einziges PDF erzeugt werden:\n\n• " + probleme.join("\n• "));
+      return;
+    }
+    btn.textContent = "Archiv wird gepackt…";
+    const zipBlob = await zip.generateAsync({ type: "blob" });
+    ladeHerunter(zipBlob, zipDateiname(vergeben.size));
+    if (probleme.length) {
+      alert(`Das Archiv enthält ${vergeben.size} von ${liste.length} Anträgen. `
+        + "Dabei sind Hinweise aufgetreten:\n\n• " + probleme.join("\n• "));
+    }
+  } catch (e) {
+    alert("Der Sammelexport ist fehlgeschlagen: " + e.message);
+  } finally {
+    exportLaeuft = false;
+    btn.disabled = false;
+    btn.textContent = originalText;
+    // Der Filter kann sich während des Laufs geändert haben, dann stimmt die
+    // Zahl in originalText nicht mehr.
+    aktualisiereExportKnopf(sichtbareAntraege().length);
+  }
+}
+
+function zipDateiname(anzahl) {
+  const heute = new Date();
+  const iso = [
+    heute.getFullYear(),
+    String(heute.getMonth() + 1).padStart(2, "0"),
+    String(heute.getDate()).padStart(2, "0")
+  ].join("-");
+  return `Raumnutzung_Antraege_${anzahl}_${iso}.zip`;
+}
+
 // Öffnet einen Blob in einem neuen Tab. Das Fenster wird synchron aufgemacht
 // und erst danach befüllt (siehe erzeugePdf), gleiche Konvention wie in
 // Trainerdaten und personalakte.
@@ -1077,6 +1232,7 @@ async function boot() {
     b.addEventListener("click", () => switchTab(b.dataset.tab));
   });
   el("btn-neuer-antrag").addEventListener("click", neuerAntrag);
+  el("btn-alle-pdfs").addEventListener("click", exportiereAllePdfs);
   el("btn-zurueck").addEventListener("click", () => switchTab("uebersicht"));
   el("btn-pdf").addEventListener("click", erzeugePdf);
   el("btn-kopieren").addEventListener("click", kopiereAntrag);

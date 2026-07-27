@@ -65,6 +65,11 @@
         </p>
         <div class="btn-row" style="justify-content:flex-start; margin-top:12px;">
           <button type="button" class="btn success" id="btn-neuer-antrag">+ Neuer Antrag</button>
+          <!-- Sammelexport: nur mit Administrieren-Recht, deshalb hier versteckt
+               und erst von setzeSchreibschutz() eingeblendet — sonst blitzt er
+               beim Laden kurz für alle auf. -->
+          <button type="button" class="btn secondary" id="btn-alle-pdfs" style="display:none;"
+                  title="Aus jedem angezeigten Antrag das ausgefüllte Original-PDF erzeugen und alle zusammen als ZIP-Archiv herunterladen">Alle als PDF-ZIP</button>
         </div>
         <div class="empty-state" id="uebersicht-empty" style="display:none;">Noch keine Anträge erfasst.</div>
         <div id="uebersicht-rows"></div>
@@ -343,9 +348,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="config.js?v=2.1"></script>
+<script src="config.js?v=2.2"></script>
 <script src="db.js?v=1.2"></script>
 <script src="pdf-fill.js?v=1.2"></script>
-<script src="app.js?v=2.3"></script>
+<script src="app.js?v=2.4"></script>
 </body>
 </html>
