@@ -76,7 +76,7 @@ const APP_CHANGELOG = [
           "Die Reiterleiste bricht am Handy um, statt seitlich aus dem Bild zu laufen — auch die hinteren Reiter sind auf schmalen Bildschirmen erreichbar.",
           "Eingabefelder sind mindestens 16 Pixel groß, damit der iPhone-Browser beim Antippen nicht ungefragt in die Seite hineinzoomt und verschoben stehen bleibt.",
           "Unterschreiben funktioniert auch auf älteren iPhones und iPads. Zuvor reagierte die Fläche dort je nach iOS-Version gar nicht auf den Finger, oder die Unterschrift wurde nie gespeichert — im zweiten Fall speicherte die App danach auch die übrigen Angaben nicht mehr.",
-          "Die Auswahl-Lupe von iOS funkt beim Unterschreiben nicht mehr dazwischen und reißt den Strich nicht ab."
+          "Die Auswahl-Lupe von iOS bleibt beim Unterschreiben aus, sodass sie den Strich nicht abreißen lässt."
         ]
       },
       {
