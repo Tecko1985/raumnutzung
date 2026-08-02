@@ -2,138 +2,87 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
-    version: "1.8",
-    groups: [
-      {
-        title: "Bedienung am Handy",
-        items: [
-          "Die Tab-Leiste bricht am Handy jetzt um, statt seitlich aus dem Bild zu laufen. Vorher waren die hinteren Tabs auf schmalen Bildschirmen nicht erreichbar.",
-          "Eingabefelder sind am Handy mindestens 16 Pixel groß. Dadurch zoomt der iPhone-Browser beim Antippen eines Feldes nicht mehr ungefragt in die Seite hinein und bleibt danach verschoben stehen."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.7",
-    groups: [
-      {
-        title: "Rechte",
-        items: [
-          "„Amtliches PDF erzeugen“ und „Per E-Mail senden“ sind jetzt dem Recht „Administrieren“ vorbehalten — bisher genügte „Bearbeiten“. Damit hängen alle drei Ausgabewege an derselben Stufe wie der Sammelexport.",
-          "Die Arbeitsteilung dahinter: Anträge ausfüllen und pflegen können weiterhin alle mit Bearbeiten-Recht. Das fertige Formular ans Amt herausgeben — als Download oder per E-Mail — ist Sache der Geschäftsstelle.",
-          "Der Versand ist auch serverseitig auf diese Stufe beschränkt, nicht nur der Knopf ausgeblendet."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.6",
-    groups: [
-      {
-        title: "Rechte",
-        items: [
-          "„Amtliches PDF erzeugen“ ist jetzt — wie „Per E-Mail senden“ — nur noch für Personen mit Bearbeiten-Recht sichtbar. Wer die Anträge nur ansehen darf, kann das ausgefüllte Amtsformular nicht mehr herunterladen: Es enthält die vollständigen Anschriften, Handynummern und E-Mail-Adressen von Veranstaltungsleitung und Vertretung.",
-          "Damit greift auch die Beschränkung des Sammelexports wieder vollständig. Bisher ließ sich derselbe Datenbestand umgehen, indem man die Anträge einzeln öffnete und einzeln als PDF erzeugte."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.5",
-    groups: [
-      {
-        title: "Neu",
-        items: [
-          "Neben „Amtliches PDF erzeugen“ steht jetzt „Per E-Mail senden“: Der Knopf erzeugt dasselbe ausgefüllte Original-PDF und schickt es direkt an das Schulverwaltungsamt des Landkreises — eine Kopie geht an die Geschäftsstelle. Betreff und Anschreiben sind fest hinterlegt, es muss nichts mehr von Hand angehängt oder getippt werden.",
-          "Vor dem Versand wird noch einmal nachgefragt, mit welchem Antrag gesendet wird. Danach steht in der Bestätigung, an welche Adressen die Mail gegangen ist.",
-          "Lässt sich die Mail nicht zustellen, sagt die App das deutlich — das PDF kann dann wie bisher heruntergeladen und von Hand verschickt werden.",
-          "Der Knopf erscheint nur für Personen mit Bearbeiten-Recht; wer die Anträge nur ansehen darf, kann sie nicht einreichen."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.4",
-    groups: [
-      {
-        title: "Neu",
-        items: [
-          "Wer für dieses Tool das Recht „Administrieren“ hat, findet über der Antragsliste den Knopf „Alle als PDF-ZIP“: Er erzeugt aus jedem angezeigten Antrag das ausgefüllte Original-PDF und packt alle als einzelne Dateien in ein ZIP-Archiv — ein Download statt einer Datei pro Antrag.",
-          "Exportiert wird immer genau das, was die Liste gerade zeigt. Steht der Status-Filter auf „Eingereicht“, sind auch nur diese Anträge im Archiv; der Knopf nennt die Anzahl, und vor dem Start wird noch einmal nachgefragt.",
-          "Lässt sich ein einzelner Antrag nicht erzeugen, laufen die übrigen trotzdem durch — das Archiv wird erstellt und die betroffenen Anträge werden am Ende aufgelistet."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.3",
-    groups: [
-      {
-        title: "Fehlerbehebungen",
-        items: [
-          "Auf älteren iPhones und iPads ließ sich nicht unterschreiben. Je nach iOS-Version reagierte die Fläche überhaupt nicht auf den Finger, oder die Unterschrift wurde nie gespeichert — im zweiten Fall speicherte die App anschließend auch die übrigen Angaben des Antrags nicht mehr. Beides ist behoben.",
-          "Auf dem iPhone konnte die Auswahl-Lupe von iOS mitten in der Unterschrift dazwischenfunken und den Strich abreißen lassen.",
-          "Lässt sich das Unterschriftsbild nicht hochladen — etwa bei schlechter Verbindung im Ausland —, steht das jetzt neben der Fläche, statt dass die App wortlos „Gespeichert“ meldet. Die Unterschrift geht dabei nicht verloren, sie wird beim nächsten Speichern erneut hochgeladen.",
-          "Wer kein Bearbeiten-Recht hat, sieht den Grund jetzt direkt an der gesperrten Unterschriftsfläche."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.2",
-    groups: [
-      {
-        title: "Verbesserungen",
-        items: [
-          "Wer bei Veranstaltungsleitung oder Vertretung einen Namen einträgt, der in den Trainerdaten hinterlegt ist, bekommt Anschrift, Telefonnummer und E-Mail automatisch eingetragen — aber nur in noch leere Felder, bereits Ausgefülltes bleibt unangetastet. Vertauschte Vor-/Nachnamen werden dabei toleriert.",
-          "In der Antragsliste steht jetzt die eingetragene Veranstaltungsleitung statt der Person, die den Antrag angelegt hat — wer angelegt hat, steht weiterhin im Kopf des geöffneten Antrags."
-        ]
-      }
-    ]
-  },
-  {
-    version: "1.1",
-    groups: [
-      {
-        title: "Fehlerbehebungen",
-        items: [
-          "Mehrzeilige Texte (etwa die Aufgaben des Hausmeisters) kommen jetzt sauber im PDF an — Zeilenumbrüche wurden bisher als Fragezeichen ins Amtsformular übernommen.",
-          "Beim schnellen Wechseln zwischen zwei Anträgen konnte die Unterschrift des zuerst geöffneten kurz auf der Fläche des zweiten landen — die Anzeige prüft jetzt, ob der Antrag noch offen ist."
-        ]
-      }
-    ]
-  },
-  {
     version: "1.0",
     groups: [
       {
         title: "Antrag erfassen",
         items: [
-          "Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld wird komplett digital erfasst — alle neun Abschnitte vom Veranstaltungsort bis zu den Bühnenflächen.",
-          "Teilnehmerzahlen werden automatisch summiert; die Summe muss niemand mehr von Hand addieren.",
+          "Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld wird vollständig digital erfasst — alle neun Abschnitte vom Veranstaltungsort bis zu den Bühnenflächen.",
+          "Teilnehmerzahlen werden von selbst summiert.",
           "Ein neuer Antrag ist bereits so vorbelegt wie das zuletzt eingereichte Formular: Beheizung und Bewirtung auf Ja, Schließdienst, Objekteinweisung, Objektabnahme, Abbau und Reinigung angehakt, alles Übrige auf Nein. Abweichungen hakt man einzeln um.",
-          "Auch die wiederkehrenden Texte stehen schon drin — das Speisen- und Getränkeangebot, die Aufgaben des Hausmeisters und die Banner-Werbung der Sponsoren. Was nicht passt, wird überschrieben.",
-          "Bei den Besuchern sind je 125 ortskundige und ortsfremde vorgetragen, der übliche Erfahrungswert. Die Summe rechnet die App mit.",
-          "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten — Eingaben werden laufend automatisch gesichert.",
-          "Anmeldung & Speicherung über die zentrale Anmeldung (Tools-Übersicht) — kein separates Passwort auf diesem Gerät nötig."
+          "Auch die wiederkehrenden Texte stehen schon drin — Speisen- und Getränkeangebot, Aufgaben des Hausmeisters und die Banner-Werbung der Sponsoren. Was nicht passt, wird überschrieben.",
+          "Bei den Besuchern sind je 125 ortskundige und ortsfremde vorgetragen, der übliche Erfahrungswert.",
+          "Anträge lassen sich als Entwurf speichern und später weiterbearbeiten; Eingaben werden laufend gesichert.",
+          "Wer bei Veranstaltungsleitung oder Vertretung einen Namen einträgt, der in den Trainerdaten steht, bekommt Anschrift, Telefonnummer und E-Mail automatisch eingesetzt — aber nur in noch leere Felder. Bereits Ausgefülltes bleibt unangetastet, und vertauschte Vor- und Nachnamen werden toleriert."
         ]
       },
       {
-        title: "Amtliches PDF erzeugen",
+        title: "Unterschreiben",
+        items: [
+          "Die Veranstaltungsleitung unterschreibt direkt in der App — mit Maus, Finger oder Stift.",
+          "Die Unterschrift landet zusammen mit Ort und Datum an der richtigen Stelle im PDF.",
+          "Der Unterschriftsblock der Schulleitung bleibt bewusst leer — den zeichnet die Schule selbst auf dem Ausdruck.",
+          "Lässt sich das Unterschriftsbild nicht hochladen, etwa bei schlechter Verbindung, steht das neben der Fläche. Die Unterschrift geht dabei nicht verloren, sie wird beim nächsten Speichern erneut hochgeladen.",
+          "Wer kein Bearbeiten-Recht hat, sieht den Grund direkt an der gesperrten Unterschriftsfläche."
+        ]
+      },
+      {
+        title: "Das amtliche Formular",
         items: [
           "Aus jedem Antrag entsteht auf Knopfdruck das ausgefüllte Original-Formular des Landkreises als PDF — genau das Blatt, das das Liegenschaftsamt erwartet.",
-          "Die Veranstaltungsleitung unterschreibt direkt in der App — mit Maus, Finger oder Stift. Die Unterschrift landet zusammen mit Ort und Datum an der richtigen Stelle im PDF, das Blatt ist damit fertig zum Einreichen.",
-          "Der Unterschriftsblock der Schulleitung bleibt bewusst leer — den zeichnet die Schule selbst auf dem Ausdruck.",
-          "Das erzeugte PDF lässt sich in jedem PDF-Programm nachbearbeiten, falls das Amt Rückfragen hat."
+          "Das erzeugte PDF lässt sich in jedem PDF-Programm nachbearbeiten, falls das Amt Rückfragen hat.",
+          "Mehrzeilige Texte wie die Aufgaben des Hausmeisters kommen mit ihren Zeilenumbrüchen sauber im Formular an."
         ]
       },
       {
-        title: "Übersicht & Status",
+        title: "Einreichen per E-Mail",
         items: [
-          "Alle Anträge in einer Liste, sortiert nach Veranstaltungsdatum, mit Status Entwurf/Eingereicht/Genehmigt/Abgelehnt.",
-          "In der Liste steht jetzt auch, wer den Antrag angelegt hat — bei mehreren Bearbeitern muss man ihn dafür nicht mehr öffnen.",
-          "Kopieren eines bestehenden Antrags als Vorlage — wiederkehrende Veranstaltungen müssen nicht neu erfasst werden.",
-          "Sichtbarkeit auf die Bearbeiter-Gruppe beschränkt, weil das Formular private Anschriften und Telefonnummern enthält."
+          "„Per E-Mail senden“ erzeugt dasselbe ausgefüllte Original-PDF und schickt es direkt an das Schulverwaltungsamt des Landkreises. Eine Kopie geht an die Geschäftsstelle.",
+          "Betreff und Anschreiben sind fest hinterlegt; es muss nichts angehängt oder getippt werden.",
+          "Vor dem Versand wird nachgefragt, mit welchem Antrag gesendet wird. Danach steht in der Bestätigung, an welche Adressen die Mail ging.",
+          "Lässt sich die Mail nicht zustellen, sagt die App das deutlich. Das PDF kann dann heruntergeladen und von Hand verschickt werden."
+        ]
+      },
+      {
+        title: "Sammelexport",
+        items: [
+          "Über der Antragsliste steht „Alle als PDF-ZIP“: daraus entsteht aus jedem angezeigten Antrag das ausgefüllte Original-PDF, gebündelt in einem Archiv — ein Download statt einer Datei je Antrag.",
+          "Exportiert wird genau das, was die Liste gerade zeigt. Steht der Status-Filter auf „Eingereicht“, sind auch nur diese Anträge im Archiv. Der Knopf nennt die Anzahl, und vor dem Start wird nachgefragt.",
+          "Lässt sich ein einzelner Antrag nicht erzeugen, laufen die übrigen trotzdem durch; die betroffenen werden am Ende aufgelistet."
+        ]
+      },
+      {
+        title: "Übersicht",
+        items: [
+          "Alle Anträge in einer Liste, sortiert nach Veranstaltungsdatum, mit Status Entwurf, Eingereicht, Genehmigt oder Abgelehnt.",
+          "In der Liste steht die eingetragene Veranstaltungsleitung. Wer den Antrag angelegt hat, steht im Kopf des geöffneten Antrags.",
+          "Ein bestehender Antrag lässt sich als Vorlage kopieren — wiederkehrende Veranstaltungen müssen nicht neu erfasst werden."
+        ]
+      },
+      {
+        title: "Wer darf was",
+        items: [
+          "Das Werkzeug ist auf die berechtigte Gruppe beschränkt, weil das Formular private Anschriften und Telefonnummern enthält.",
+          "Sehen: die Antragsliste und die Anträge, schreibgeschützt.",
+          "Bearbeiten: Anträge anlegen, ausfüllen, kopieren und unterschreiben.",
+          "Administrieren: alle drei Ausgabewege — das amtliche PDF erzeugen, per E-Mail einreichen und der Sammelexport.",
+          "Die Arbeitsteilung dahinter: einen Antrag ausfüllen darf jeder Bearbeiter. Das fertige Formular ans Amt herausgeben ist Sache der Geschäftsstelle. Beschränkt ist das auch auf dem Server, nicht nur am ausgeblendeten Knopf — sonst ließe sich der Sammelexport umgehen, indem man die Anträge einzeln öffnet.",
+          "Der Reiter „Info“ ist für alle sichtbar."
+        ]
+      },
+      {
+        title: "Bedienung am Handy",
+        items: [
+          "Die Reiterleiste bricht am Handy um, statt seitlich aus dem Bild zu laufen — auch die hinteren Reiter sind auf schmalen Bildschirmen erreichbar.",
+          "Eingabefelder sind mindestens 16 Pixel groß, damit der iPhone-Browser beim Antippen nicht ungefragt in die Seite hineinzoomt und verschoben stehen bleibt.",
+          "Unterschreiben funktioniert auch auf älteren iPhones und iPads. Zuvor reagierte die Fläche dort je nach iOS-Version gar nicht auf den Finger, oder die Unterschrift wurde nie gespeichert — im zweiten Fall speicherte die App danach auch die übrigen Angaben nicht mehr.",
+          "Die Auswahl-Lupe von iOS funkt beim Unterschreiben nicht mehr dazwischen und reißt den Strich nicht ab."
+        ]
+      },
+      {
+        title: "Daten & Speicherung",
+        items: [
+          "Gespeichert wird in der Vereins-Nextcloud über die zentrale Anmeldung der Tools-Übersicht — ein eigenes Passwort braucht es nicht."
         ]
       }
     ]
