@@ -70,6 +70,22 @@ async function fetchMe() {
   return gatewayRequest({ action: "me", app: GATEWAY_APP_ID });
 }
 
+// Liefert {users:[{username,displayName}]} — alle mit Bearbeiten- ODER
+// Administrieren-Recht für dieses Tool. Auswahlquelle für die Verteilerliste in
+// den Einstellungen: der Worker lässt die Meldung nur an Berechtigte durch, eine
+// allgemeine Nutzerliste böte hier also Haken an, die nichts bewirken.
+async function fetchToolEditors() {
+  return gatewayRequest({ action: "list-tool-editors", app: GATEWAY_APP_ID });
+}
+
+// Meldet einen Vorgang beim Gateway. Der EMPFÄNGER wird dort serverseitig aus
+// dem Datensatz bzw. den Rechten bestimmt — diese App schickt bewusst keinen
+// Nutzernamen mit, sonst könnte ein Bearbeiter beliebige Leute benachrichtigen
+// lassen und ein Tippfehler liefe unbemerkt ins Leere.
+async function gatewayVorgangPush(art, id) {
+  return gatewayRequest({ action: "vorgang-push", app: GATEWAY_APP_ID, art, id });
+}
+
 // Unterschriften liegen als eigene PNG-Dateien im dateien/-Ordner der App statt
 // als base64-DataURL inline in der JSON. Sonst wüchse die Gesamtdatei mit jedem
 // Antrag um mehrere Zehn-KB und jedes Speichern übertrüge alle Unterschriften

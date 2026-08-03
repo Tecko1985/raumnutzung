@@ -30,8 +30,11 @@ function scheduleSave() {
   saveTimer = setTimeout(() => { saveTimer = null; doSave(); }, 900);
 }
 
+// Meldet seit 1.8 zurück, OB gespeichert wurde (true/false). Bestehende Aufrufer
+// ignorieren den Wert; gebraucht wird er von speichereSofort(), weil eine
+// Push-Meldung nur raus darf, wenn der Vorgang wirklich in der Datei steht.
 async function doSave() {
-  if (saveInFlight) { savePending = true; return; }
+  if (saveInFlight) { savePending = true; return false; }
   saveInFlight = true;
   try {
     await lagereUnterschriftenAus();
@@ -41,6 +44,7 @@ async function doSave() {
     // scheitert — dann steht es jetzt am Unterschriftsfeld.
     const offen = findeAntrag(currentAntragId);
     if (offen) setUnterschriftStatus(offen);
+    return true;
   } catch (e) {
     if (e instanceof NotLoggedInError) {
       showConnectScreen(e.message);
@@ -49,14 +53,70 @@ async function doSave() {
       alert("Die Daten wurden zwischenzeitlich von einem anderen Gerät geändert. "
         + "Die Seite wird neu geladen, damit nichts überschrieben wird.");
       location.reload();
-      return;
+      return false;
     } else {
       setSaveHint("Nicht gespeichert: " + e.message, true);
     }
+    return false;
   } finally {
     saveInFlight = false;
     if (savePending) { savePending = false; doSave(); }
   }
+}
+
+// Speichert JETZT statt in 900 ms und meldet, ob es geklappt hat.
+//
+// ⚠️ Nötig überall dort, wo der Worker gleich danach den Datensatz lesen soll:
+// `vorgang-push` sucht den Antrag in der Nextcloud-Datei. Ginge die Meldung vor
+// dem Speichern raus, fände er ihn nicht (404) oder läse einen alten Stand — und
+// niemand bekäme etwas mit, weil der Push-Fehler bewusst geschluckt wird.
+async function speichereSofort() {
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
+  // Auf einen bereits laufenden Save warten: doSave() setzt sonst nur
+  // savePending und käme sofort mit false zurück, obwohl gleich gespeichert wird.
+  for (let i = 0; i < 100 && (saveInFlight || savePending); i++) {
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  return doSave();
+}
+
+// ---------------------------------------------------------------------------
+// Benachrichtigung (seit 2026-08-03)
+// ---------------------------------------------------------------------------
+// Der Empfänger wird SERVERSEITIG bestimmt: bei "neu" die Einreichenden, bei
+// "entschieden" der Urheber des Antrags. Diese App schickt bewusst keinen
+// Nutzernamen mit — sonst könnte ein Bearbeiter beliebige Leute benachrichtigen
+// lassen, und ein Tippfehler liefe unbemerkt ins Leere.
+async function pushVorgang(art, id) {
+  try {
+    await gatewayVorgangPush(art, id);
+  } catch (e) {
+    // Best-effort: der Antrag ist gespeichert, eine misslungene Benachrichtigung
+    // darf ihn nicht als Fehler erscheinen lassen.
+    console.warn("Benachrichtigung fehlgeschlagen", e);
+  }
+}
+
+// Welcher Statuswechsel wen erreicht. Die Rückstufung auf "entwurf" meldet sich
+// bewusst nicht — sie nimmt etwas zurück, statt jemandem Arbeit zu geben.
+function pushArtFuerStatus(status) {
+  if (status === "fertig") return "neu";              // an die Einreichenden
+  if (status === "eingereicht" || status === "genehmigt" || status === "abgelehnt") {
+    return "entschieden";                             // an den Urheber
+  }
+  return null;
+}
+
+// ⚠️ Gemeinsamer Weg für BEIDE Wege in denselben Status: den Knopf „Fertig zum
+// Einreichen" UND das Status-Auswahlfeld daneben. Ohne das meldete sich der eine
+// und der andere nicht — derselbe Vorgang mit zwei verschiedenen Verhalten, und
+// wer die Auswahl benutzt, käme nie auf die Idee, dass etwas fehlt.
+async function statusGewechselt(a) {
+  const art = pushArtFuerStatus(a.status);
+  if (!art) { scheduleSave(); return true; }
+  const ok = await speichereSofort();
+  if (ok) await pushVorgang(art, a.id);
+  return ok;
 }
 
 // Beim Verlassen einer Ansicht den anstehenden Autosave sofort auslösen, sonst
@@ -232,6 +292,12 @@ function leererAntrag() {
 // jedes Lesen eine Fallback-Kette braucht.
 function normalizeData(raw) {
   const data = raw && typeof raw === "object" ? raw : {};
+  if (!data.einstellungen || typeof data.einstellungen !== "object") data.einstellungen = {};
+  // Verteiler für die Meldung „Antrag fertig“. LEER heißt bewusst „alle
+  // Einreichenden“ (bisheriges Verhalten), nicht „niemand“ — ein still
+  // ausbleibendes Push würde niemandem auffallen. Der Worker legt die Liste nur
+  // als Filter über die Berechtigten, sie kann den Kreis also nie erweitern.
+  if (!Array.isArray(data.einstellungen.pushEmpfaenger)) data.einstellungen.pushEmpfaenger = [];
   const liste = Array.isArray(data.antraege) ? data.antraege : [];
   const vorlage = leererAntrag();
   data.antraege = liste.map((a) => {
@@ -519,7 +585,45 @@ function setzeSchreibschutz() {
   ["btn-pdf", "btn-mail", "btn-alle-pdfs"].forEach((id) => {
     const b = el(id); if (b) b.style.display = darfAusgeben ? "" : "none";
   });
+  // Einstellungen (Verteiler der Benachrichtigung) hängen an der dritten Stufe,
+  // wie der Reiter in allen Geschwister-Apps.
+  const navE = el("nav-einstellungen");
+  if (navE) navE.style.display = darfAusgeben ? "" : "none";
+  zeigeFertigKnopf(findeAntrag(currentAntragId));
   if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen brauchen das Bearbeiten-Recht für dieses Tool.");
+}
+
+// Der Knopf steht nur, solange es etwas zu melden gibt: im Entwurf und mit
+// Bearbeiten-Recht. Ab „fertig“ ist die Meldung raus und die Geschäftsstelle am
+// Zug — ein Knopf, der dann noch dastünde, lüde zum zweiten Klingeln ein.
+function zeigeFertigKnopf(a) {
+  const b = el("btn-fertig");
+  if (!b) return;
+  b.style.display = (a && a.status === "entwurf" && canEdit()) ? "" : "none";
+}
+
+async function meldeFertig() {
+  const a = findeAntrag(currentAntragId);
+  if (!a || !canEdit() || a.status !== "entwurf") return;
+  const b = el("btn-fertig");
+  const vorher = a.status;
+  const beschriftung = b.textContent;
+  b.disabled = true;
+  b.textContent = "Wird gemeldet…";
+  try {
+    a.status = "fertig";
+    a.geaendertAm = new Date().toISOString();
+    const ok = await statusGewechselt(a);
+    // Konnte nicht gespeichert werden, ist nichts Bleibendes passiert — Status
+    // zurück. Der Fehlerhinweis steht bereits am Speicherhinweis; ein „fertig“,
+    // das nur im Browser existiert, wäre schlimmer als gar keins.
+    if (!ok) a.status = vorher;
+    fuelleFormular(a);
+    renderUebersicht();
+  } finally {
+    b.disabled = false;
+    b.textContent = beschriftung;
+  }
 }
 
 function aktualisiereSumme() {
@@ -549,6 +653,11 @@ function bindeFormular() {
       const pill = el("antrag-status-pill");
       pill.textContent = STATUS_LABELS[a.status] || a.status;
       pill.className = "status-pill status-" + a.status;
+      zeigeFertigKnopf(a);
+      // statusGewechselt() speichert selbst (sofort statt debounced) und meldet
+      // danach — deshalb hier KEIN zusätzliches scheduleSave().
+      statusGewechselt(a);
+      return;
     }
     scheduleSave();
     const nameTreffer = ev.target.id && ev.target.id.match(/^f-(leiter|vertreter)-name$/);
@@ -1236,7 +1345,109 @@ function switchTab(name) {
     s.classList.toggle("active", s.id === "tab-" + name);
   });
   if (name === "uebersicht") renderUebersicht();
+  if (name === "einstellungen") renderEinstellungen();
   window.scrollTo(0, 0);
+}
+
+// ---------------------------------------------------------------------------
+// Einstellungen: wer wird über fertige Anträge benachrichtigt
+// ---------------------------------------------------------------------------
+// Lazy geladen und für die Sitzung gemerkt — nur mit Administrieren-Recht kommt
+// man überhaupt in den Reiter, der Aufruf lohnt sich beim App-Start nicht.
+let entscheiderDirectory = null;
+
+// Gewählter Verteiler. Leer = alle Berechtigten (die Entscheidung dazu fällt im
+// Worker, hier steht nur der Wert).
+function pushEmpfaengerListe(data) {
+  const v = data && data.einstellungen ? data.einstellungen.pushEmpfaenger : null;
+  return Array.isArray(v) ? v : [];
+}
+
+async function ensureEntscheiderDirectory() {
+  if (entscheiderDirectory) return entscheiderDirectory;
+  try {
+    const res = await fetchToolEditors();
+    const users = Array.isArray(res.users) ? res.users : [];
+    entscheiderDirectory = users.slice().sort((a, b) =>
+      (a.displayName || a.username).localeCompare(b.displayName || b.username, "de"));
+  } catch (e) {
+    entscheiderDirectory = [];
+  }
+  return entscheiderDirectory;
+}
+
+function pushEmpfaengerRowHtml(user) {
+  const gewaehlt = pushEmpfaengerListe(appData).indexOf(user.username) !== -1;
+  return `
+    <div class="tz-row" data-username="${escapeHtml(user.username)}">
+      <label class="pe-checkbox"><input type="checkbox" class="push-empf" ${gewaehlt ? "checked" : ""} /> ${escapeHtml(user.displayName || user.username)}</label>
+    </div>`;
+}
+
+async function renderEinstellungen() {
+  const ziel = el("push-empfaenger-list");
+  if (!ziel) return;
+  ziel.innerHTML = `<p class="muted">Lade Liste…</p>`;
+  const users = await ensureEntscheiderDirectory();
+  ziel.innerHTML = users.length
+    ? users.map(pushEmpfaengerRowHtml).join("")
+    : `<p class="muted">Es ist niemand hinterlegt, der Anträge einreichen darf. Die Gruppen dafür werden in der Tools-Übersicht vergeben.</p>`;
+  renderPushEmpfaengerHinweis();
+}
+
+// Sagt an, was der Häkchenstand bedeutet — vor allem den Fall „nichts angehakt“,
+// der eben NICHT „niemand“ heißt. Ohne den Satz liest sich eine leere Liste wie
+// ein abgeschalteter Versand.
+function renderPushEmpfaengerHinweis() {
+  const elH = el("push-empfaenger-hinweis");
+  if (!elH) return;
+  const gesamt = document.querySelectorAll("#push-empfaenger-list .tz-row").length;
+  const gewaehlt = document.querySelectorAll("#push-empfaenger-list .push-empf:checked").length;
+  if (!gesamt) { elH.style.display = "none"; return; }
+  // Gespeicherte Namen, die niemand mehr einreichen darf, stehen nicht mehr in
+  // der Liste und verschwänden hier lautlos. Der Totalausfall ist im Worker
+  // abgefangen (bleibt niemand übrig, gehen die Meldungen wieder an alle) —
+  // sichtbar muss es trotzdem sein, sonst schrumpft der Verteiler unbemerkt.
+  const bekannt = (entscheiderDirectory || []).map((u) => u.username);
+  const verwaist = pushEmpfaengerListe(appData).filter((n) => bekannt.indexOf(n) === -1);
+  elH.style.display = "block";
+  let text = gewaehlt
+    ? `Es werden ${gewaehlt} von ${gesamt} benachrichtigt.`
+    : `Nichts angehakt — es werden alle ${gesamt} benachrichtigt.`;
+  if (verwaist.length) {
+    text += ` Achtung: ${verwaist.join(", ")} war ausgewählt, darf aber keine Anträge mehr einreichen und bekommt nichts mehr. Beim nächsten Speichern fällt der Eintrag weg.`;
+  }
+  elH.textContent = text;
+}
+
+function showEinstellungenStatus(msg, isError) {
+  const s = el("einstellungen-status");
+  if (!s) return;
+  s.style.display = msg ? "block" : "none";
+  s.textContent = msg || "";
+  s.style.color = isError ? "var(--red)" : "var(--green)";
+}
+
+async function saveEinstellungen() {
+  if (!canAdmin()) return;
+  showEinstellungenStatus("");
+  const rows = Array.from(document.querySelectorAll("#push-empfaenger-list .tz-row"));
+  // Keine Zeilen ⇒ Liste war nicht geladen ⇒ nichts überschreiben, statt den
+  // gespeicherten Verteiler versehentlich zu leeren.
+  if (!rows.length) { showEinstellungenStatus("Die Liste ist noch nicht geladen.", true); return; }
+  const gewaehlt = rows
+    .filter((r) => r.querySelector(".push-empf").checked)
+    .map((r) => r.dataset.username);
+  const btn = el("btn-save-einstellungen");
+  btn.disabled = true;
+  try {
+    appData.einstellungen.pushEmpfaenger = gewaehlt;
+    const ok = await speichereSofort();
+    showEinstellungenStatus(ok ? "Gespeichert ✓" : "Nicht gespeichert — siehe Hinweis oben.", !ok);
+    if (ok) renderPushEmpfaengerHinweis();
+  } finally {
+    btn.disabled = false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1312,8 +1523,13 @@ async function boot() {
   el("btn-zurueck").addEventListener("click", () => switchTab("uebersicht"));
   el("btn-pdf").addEventListener("click", erzeugePdf);
   el("btn-mail").addEventListener("click", sendePerMail);
+  el("btn-fertig").addEventListener("click", meldeFertig);
   el("btn-kopieren").addEventListener("click", kopiereAntrag);
   el("btn-loeschen").addEventListener("click", loescheAntrag);
+  el("btn-save-einstellungen").addEventListener("click", saveEinstellungen);
+  el("push-empfaenger-list").addEventListener("change", (ev) => {
+    if (ev.target.closest(".push-empf")) renderPushEmpfaengerHinweis();
+  });
   el("uebersicht-status-filter").addEventListener("change", (ev) => {
     currentFilter = ev.target.value;
     renderUebersicht();

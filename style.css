@@ -294,9 +294,25 @@ button.btn.danger:hover { background: #a5311f; }
   border: 1px solid var(--border);
 }
 .status-entwurf { background: var(--gray); color: var(--muted); }
+/* Gold, weil dieser Status als einziger eine Handlung von jemand anderem
+   erwartet — er soll in der Liste ins Auge fallen. */
+.status-fertig { background: var(--gold-light); color: var(--gold); border-color: #ecd9a8; }
 .status-eingereicht { background: var(--blue-light); color: var(--blue); border-color: #c3d6f2; }
 .status-genehmigt { background: var(--green-light); color: var(--green); border-color: #bfe2cd; }
 .status-abgelehnt { background: var(--red-light); color: var(--red); border-color: #f0b8b0; }
+
+/* Verteilerliste in den Einstellungen. Gleiche Klassen wie im Testspielplaner,
+   damit beide Listen sich gleich verhalten. Das Kaestchen steht bewusst in
+   .pe-checkbox und NICHT in .form-field — dort greift input{width:100%} und
+   macht aus jeder Checkbox einen Balken. */
+.tz-block summary { cursor: pointer; font-weight: 600; font-size: 15px; }
+.tz-row {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.tz-row:last-child { border-bottom: none; }
+.pe-checkbox { display: inline-flex; align-items: center; gap: 5px; font-size: 13px; cursor: pointer; }
+.pe-checkbox input { cursor: pointer; }
 
 /* Speicherhinweis neben den Aktionsknoepfen */
 .save-hint { align-self: center; font-size: 13px; color: var(--muted); }

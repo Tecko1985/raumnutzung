@@ -2,6 +2,31 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
+    version: "1.1",
+    groups: [
+      {
+        title: "Fertige Anträge melden sich",
+        items: [
+          "Neuer Knopf „Fertig zum Einreichen“ im Antrag: damit sagt der ausfüllende Trainer Bescheid, dass der Antrag fertig ist.",
+          "Wer den Antrag beim Amt einreicht, bekommt darüber eine Nachricht aufs Handy — bisher musste jemand von sich aus in die Liste schauen.",
+          "„Fertig zum Einreichen“ ist auch ein eigener Status: in der Übersicht ist damit auf einen Blick zu sehen, welche Anträge warten. Man kann danach filtern.",
+          "Umgekehrt bekommt der Trainer eine Nachricht, sobald sein Antrag eingereicht wurde und wenn der Landkreis genehmigt oder ablehnt.",
+          "Die Nachricht nennt kein Ergebnis — sie steht auf dem Sperrbildschirm. Was passiert ist, sieht man nach dem Antippen.",
+          "Eingeschaltet wird das in der Tools-Übersicht unter „Mein Konto“, einzeln für dieses Werkzeug. Wer es nicht einschaltet, merkt keinen Unterschied."
+        ]
+      },
+      {
+        title: "Wer benachrichtigt wird, ist einstellbar",
+        items: [
+          "Neuer Reiter „Einstellungen“ (nur mit der Stufe Administrieren) mit der Liste „Wer wird über fertige Anträge benachrichtigt“.",
+          "Zur Auswahl stehen nur Personen, die den Antrag auch einreichen dürfen — ein Haken bei jemand anderem hätte nichts bewirkt.",
+          "Solange nichts angehakt ist, werden alle davon benachrichtigt. Unter der Liste steht, was der aktuelle Stand bedeutet.",
+          "Die Auswahl kann den Kreis nur verkleinern. Wer sein Recht verliert, bekommt automatisch nichts mehr — auch wenn er noch angehakt ist."
+        ]
+      }
+    ]
+  },
+  {
     version: "1.0",
     groups: [
       {
@@ -152,8 +177,13 @@ const ANTRAG_VORBELEGUNG = {
   }
 };
 
+// „fertig“ ist der Übergabepunkt zwischen den beiden Rollen: Trainer füllen aus
+// (Bearbeiten), eingereicht wird von der Geschäftsstelle (Administrieren). Ohne
+// diesen Zwischenschritt gab es keinen Moment, an dem jemand „ich bin fertig“
+// sagt — ein Antrag lag im Entwurf, und niemand erfuhr davon.
 const STATUS_LABELS = {
   entwurf: "Entwurf",
+  fertig: "Fertig zum Einreichen",
   eingereicht: "Eingereicht",
   genehmigt: "Genehmigt",
   abgelehnt: "Abgelehnt"

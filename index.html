@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>🏛️ Raumnutzung</title>
 <meta name="theme-color" content="#1a56a0" />
-<link rel="stylesheet" href="style.css?v=1.4" />
+<link rel="stylesheet" href="style.css?v=1.5" />
 </head>
 <body>
 
@@ -40,6 +40,10 @@
     <button data-tab="uebersicht" class="active">Anträge</button>
     <button data-tab="antrag" id="nav-antrag" style="display:none;">Antrag</button>
     <div class="nav-right">
+      <!-- Versteckt im Markup, von setzeSchreibschutz() bei canAdmin() eingeblendet
+           — sonst blitzt der Reiter beim Laden für jeden auf, bevor die Rechte da
+           sind. Rechter Reiter = Administrieren (Flottenregel), Info für alle. -->
+      <button data-tab="einstellungen" id="nav-einstellungen" style="display:none;">Einstellungen</button>
       <button data-tab="info">Info</button>
     </div>
   </nav>
@@ -53,6 +57,7 @@
           <select id="uebersicht-status-filter">
             <option value="alle">Alle Status</option>
             <option value="entwurf">Entwurf</option>
+            <option value="fertig">Fertig zum Einreichen</option>
             <option value="eingereicht">Eingereicht</option>
             <option value="genehmigt">Genehmigt</option>
             <option value="abgelehnt">Abgelehnt</option>
@@ -87,6 +92,11 @@
         <p class="muted" id="antrag-meta"></p>
         <div class="btn-row" style="justify-content:flex-start; margin-top:10px; flex-wrap:wrap;">
           <button type="button" class="btn secondary small" id="btn-zurueck">← Zur Übersicht</button>
+          <!-- Meldet den Antrag bei der Geschäftsstelle an. Versteckt im Markup und
+               von setzeSchreibschutz()/zeigeAntrag() eingeblendet, sonst blitzt er
+               beim Laden für alle auf. -->
+          <button type="button" class="btn success small" id="btn-fertig" style="display:none;"
+                  title="Meldet der Geschäftsstelle, dass dieser Antrag ausgefüllt ist und beim Amt eingereicht werden kann">✓ Fertig zum Einreichen</button>
           <button type="button" class="btn small" id="btn-pdf" style="display:none;">📄 Amtliches PDF erzeugen</button>
           <button type="button" class="btn small" id="btn-mail" style="display:none;">📧 Per E-Mail senden</button>
           <span class="save-hint" id="save-hint"></span>
@@ -312,6 +322,7 @@
           <label for="f-status">Status</label>
           <select id="f-status">
             <option value="entwurf">Entwurf</option>
+            <option value="fertig">Fertig zum Einreichen</option>
             <option value="eingereicht">Eingereicht</option>
             <option value="genehmigt">Genehmigt</option>
             <option value="abgelehnt">Abgelehnt</option>
@@ -327,6 +338,30 @@
         </div>
       </div>
 
+    </section>
+
+    <!-- ---------- Einstellungen (Administrieren) ---------- -->
+    <section class="tab-section" id="tab-einstellungen">
+      <div class="card">
+        <h2>Einstellungen</h2>
+        <details class="tz-block" open>
+          <summary>Wer wird über fertige Anträge benachrichtigt</summary>
+          <p class="muted" style="margin-top:6px;">
+            Meldet ein Trainer einen Antrag als fertig, geht eine Nachricht aufs
+            Handy. Hier steht, bei wem. Zur Auswahl stehen nur Personen, die den
+            Antrag auch beim Amt einreichen dürfen — die Rechte dafür werden in der
+            Tools-Übersicht vergeben. <strong>Nichts angehakt heißt: alle davon
+            werden benachrichtigt.</strong> Wer gar keine Meldungen möchte, schaltet
+            sie in der Tools-Übersicht unter „Mein Konto“ für sich selbst ab.
+          </p>
+          <div id="push-empfaenger-list" style="margin-top:8px;"></div>
+          <p class="muted" id="push-empfaenger-hinweis" style="display:none; margin-top:8px;"></p>
+        </details>
+        <p class="muted" id="einstellungen-status" style="display:none; margin-top:10px;"></p>
+        <div class="btn-row" style="justify-content:flex-end; margin-top:16px;">
+          <button type="button" class="btn success" id="btn-save-einstellungen">Speichern</button>
+        </div>
+      </div>
     </section>
 
     <!-- ---------- Info ---------- -->
@@ -370,9 +405,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="config.js?v=2.8"></script>
-<script src="db.js?v=1.2"></script>
+<script src="config.js?v=2.9"></script>
+<script src="db.js?v=1.3"></script>
 <script src="pdf-fill.js?v=1.2"></script>
-<script src="app.js?v=2.8"></script>
+<script src="app.js?v=2.9"></script>
 </body>
 </html>
