@@ -328,6 +328,13 @@
             <option value="abgelehnt">Abgelehnt</option>
           </select>
         </div>
+        <!-- Steht nur für die, die den Status nicht bewegen dürfen. Ein
+             ausgegrautes Feld ohne Erklärung liest sich wie ein Fehler. -->
+        <p class="muted" id="status-nur-lesen-hinweis" style="display:none; margin-top:-4px;">
+          Den Status setzt die Geschäftsstelle. Bist du mit dem Antrag fertig,
+          nimm oben „✓ Fertig zum Einreichen“ — dann wird sie benachrichtigt und
+          übernimmt.
+        </p>
         <div class="form-field">
           <label for="f-notiz">Interne Notiz (steht nicht im PDF)</label>
           <textarea id="f-notiz" rows="2"></textarea>
@@ -405,9 +412,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="config.js?v=2.9"></script>
+<script src="config.js?v=3.0"></script>
 <script src="db.js?v=1.3"></script>
 <script src="pdf-fill.js?v=1.2"></script>
-<script src="app.js?v=2.9"></script>
+<script src="app.js?v=3.0"></script>
 </body>
 </html>

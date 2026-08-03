@@ -9,6 +9,7 @@ const APP_CHANGELOG = [
         items: [
           "Neuer Knopf „Fertig zum Einreichen“ im Antrag: damit sagt der ausfüllende Trainer Bescheid, dass der Antrag fertig ist.",
           "Wer den Antrag beim Amt einreicht, bekommt darüber eine Nachricht aufs Handy — bisher musste jemand von sich aus in die Liste schauen.",
+          "Den Status selbst setzt ab jetzt nur noch die Geschäftsstelle. Wer einen Antrag ausfüllt, hat genau einen Weg aus dem Entwurf heraus: den Knopf. Das Statusfeld bleibt sichtbar, damit jeder sieht, wo sein Antrag steht.",
           "„Fertig zum Einreichen“ ist auch ein eigener Status: in der Übersicht ist damit auf einen Blick zu sehen, welche Anträge warten. Man kann danach filtern.",
           "Umgekehrt bekommt der Trainer eine Nachricht, sobald sein Antrag eingereicht wurde und wenn der Landkreis genehmigt oder ablehnt.",
           "Die Nachricht nennt kein Ergebnis — sie steht auf dem Sperrbildschirm. Was passiert ist, sieht man nach dem Antippen.",

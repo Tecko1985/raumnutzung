@@ -589,6 +589,20 @@ function setzeSchreibschutz() {
   // wie der Reiter in allen Geschwister-Apps.
   const navE = el("nav-einstellungen");
   if (navE) navE.style.display = darfAusgeben ? "" : "none";
+
+  // ⚠️ Den Status bewegt NUR die Geschäftsstelle (Michel-Vorgabe 2026-08-03) —
+  // deshalb nach der Sammelzeile oben noch einmal gesondert gesperrt. Trainer
+  // haben genau einen Weg aus dem Entwurf heraus: den Knopf „Fertig zum
+  // Einreichen“. Sonst könnte ein Antrag auf „eingereicht“ stehen, ohne dass ihn
+  // je jemand beim Amt eingereicht hat — und das merkt niemand, denn nach außen
+  // sieht die Liste dann erledigt aus.
+  // Das Feld bleibt SICHTBAR, nur gesperrt: der Status ist die Information, wo
+  // der Antrag gerade steht, und die geht auch den Ausfüllenden etwas an.
+  const statusFeld = el("f-status");
+  if (statusFeld) statusFeld.disabled = gesperrt || !darfAusgeben;
+  const statusHinweis = el("status-nur-lesen-hinweis");
+  if (statusHinweis) statusHinweis.style.display = (!gesperrt && !darfAusgeben) ? "block" : "none";
+
   zeigeFertigKnopf(findeAntrag(currentAntragId));
   if (gesperrt) setSaveHint("Nur Lesezugriff — Änderungen brauchen das Bearbeiten-Recht für dieses Tool.");
 }
@@ -647,6 +661,14 @@ function bindeFormular() {
   tab.addEventListener("change", (ev) => {
     const a = findeAntrag(currentAntragId);
     if (!a || !canEdit()) return;
+    // ⚠️ Zweiter Riegel neben dem `disabled` aus setzeSchreibschutz(), und er
+    // muss VOR uebernehmeFeld() stehen: das schreibt den Wert sofort in den
+    // Datensatz. Stünde die Prüfung dahinter, wäre der Status lokal schon
+    // verfälscht — nicht gespeichert und nicht gemeldet, aber der nächste
+    // beliebige Feld-Edit nähme ihn per Autosave mit.
+    // (Direkt am Element, nicht über setV — das ist eine LOKALE Konstante in
+    // fuelleFormular und hier nicht im Scope.)
+    if (ev.target.id === "f-status" && !canAdmin()) { ev.target.value = a.status; return; }
     if (!uebernehmeFeld(a, ev.target)) return;
     a.geaendertAm = new Date().toISOString();
     if (ev.target.id === "f-status") {
