@@ -1257,7 +1257,7 @@ function renderChangelog() {
 }
 
 function setzeVersionsbadges() {
-  [el("version-badge"), el("version-badge-2")].forEach((b) => {
+  [el("version-badge-2")].forEach((b) => {
     if (b) b.textContent = "v" + APP_VERSION;
   });
 }
@@ -1323,12 +1323,6 @@ async function boot() {
     if (btn) oeffneAntrag(btn.dataset.open);
   });
   bindeFormular();
-
-  const badge = el("version-badge");
-  badge.addEventListener("click", () => switchTab("info"));
-  badge.addEventListener("keydown", (ev) => {
-    if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); switchTab("info"); }
-  });
 
   // Letzten Autosave beim Schließen/Wegschalten noch loswerden.
   window.addEventListener("beforeunload", flushSave);
