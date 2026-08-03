@@ -38,6 +38,7 @@
 <div id="app-shell" style="display:none;">
   <nav>
     <button data-tab="uebersicht" class="active">Anträge</button>
+    <button data-tab="archiv" id="nav-archiv">Archiv</button>
     <button data-tab="antrag" id="nav-antrag" style="display:none;">Antrag</button>
     <div class="nav-right">
       <!-- Versteckt im Markup, von setzeSchreibschutz() bei canAdmin() eingeblendet
@@ -54,19 +55,20 @@
       <div class="card">
         <div class="card-header-row">
           <h2>Anträge auf Raumnutzung</h2>
+          <!-- Genehmigt/Abgelehnt fehlen hier bewusst: die stehen im Archiv, ein
+               Filter darauf könnte hier nur eine leere Liste liefern. -->
           <select id="uebersicht-status-filter">
-            <option value="alle">Alle Status</option>
+            <option value="alle">Alle offenen</option>
             <option value="entwurf">Entwurf</option>
             <option value="fertig">Fertig zum Einreichen</option>
             <option value="eingereicht">Eingereicht</option>
-            <option value="genehmigt">Genehmigt</option>
-            <option value="abgelehnt">Abgelehnt</option>
           </select>
         </div>
         <p class="muted">
           Das Formular „Raumnutzung für Veranstaltungen“ des Landkreises Eichsfeld.
           Aus jedem Antrag lässt sich das ausgefüllte Original-PDF für das
-          Liegenschaftsamt erzeugen.
+          Liegenschaftsamt erzeugen. Hier stehen die laufenden Anträge —
+          genehmigte und abgelehnte wandern in den Reiter <strong>Archiv</strong>.
         </p>
         <div class="btn-row" style="justify-content:flex-start; margin-top:12px;">
           <button type="button" class="btn success" id="btn-neuer-antrag">+ Neuer Antrag</button>
@@ -78,6 +80,34 @@
         </div>
         <div class="empty-state" id="uebersicht-empty" style="display:none;">Noch keine Anträge erfasst.</div>
         <div id="uebersicht-rows"></div>
+      </div>
+    </section>
+
+    <!-- ---------- Archiv: abgeschlossene Antraege ---------- -->
+    <section class="tab-section" id="tab-archiv">
+      <div class="card">
+        <div class="card-header-row">
+          <h2>Archiv</h2>
+          <select id="archiv-status-filter">
+            <option value="alle">Alle abgeschlossenen</option>
+            <option value="genehmigt">Genehmigt</option>
+            <option value="abgelehnt">Abgelehnt</option>
+          </select>
+        </div>
+        <p class="muted">
+          Anträge, über die der Landkreis entschieden hat. Sie bleiben vollständig
+          erhalten und lassen sich weiter öffnen und als PDF ausgeben — nur aus der
+          Arbeitsliste sind sie heraus.
+        </p>
+        <div class="btn-row" style="justify-content:flex-start; margin-top:12px;">
+          <!-- Eigener Export-Knopf: ohne ihn wäre das Archiv nach der Aufteilung
+               gar nicht mehr im Sammelexport erreichbar. Gleiches Rechte-Gate wie
+               der andere, deshalb ebenfalls versteckt im Markup. -->
+          <button type="button" class="btn secondary" id="btn-alle-pdfs-archiv" style="display:none;"
+                  title="Aus jedem angezeigten Antrag das ausgefüllte Original-PDF erzeugen und alle zusammen als ZIP-Archiv herunterladen">Alle als PDF-ZIP</button>
+        </div>
+        <div class="empty-state" id="archiv-empty" style="display:none;">Noch nichts abgeschlossen.</div>
+        <div id="archiv-rows"></div>
       </div>
     </section>
 
@@ -412,9 +442,9 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
-<script src="config.js?v=3.0"></script>
+<script src="config.js?v=3.1"></script>
 <script src="db.js?v=1.3"></script>
 <script src="pdf-fill.js?v=1.2"></script>
-<script src="app.js?v=3.0"></script>
+<script src="app.js?v=3.1"></script>
 </body>
 </html>

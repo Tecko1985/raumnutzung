@@ -6,6 +6,10 @@ let appData = { antraege: [] };
 let currentUser = null;
 let currentAntragId = null;
 let currentFilter = "alle";
+// Zweiter Filter für das Archiv und der Merker, welche der beiden Listen offen
+// ist — daran hängt, was der Sammelexport packt.
+let archivFilter = "alle";
+let aktiveListe = "uebersicht"; // "uebersicht" | "archiv"
 // Läuft gerade ein Sammelexport? Solange das steht, gehört die Beschriftung des
 // Export-Knopfes dem Fortschritt und darf nicht vom Neurendern der Liste
 // überschrieben werden.
@@ -365,32 +369,78 @@ function sortierteAntraege() {
   return liste;
 }
 
-// Die Anträge, die die Liste gerade zeigt. Eigene Funktion, weil der
+// Abgeschlossen = vom Landkreis entschieden. Diese beiden wandern ins Archiv
+// (Michel-Vorgabe 2026-08-03), damit die Arbeitsliste nur zeigt, was noch etwas
+// von jemandem will.
+const ARCHIV_STATUS = ["genehmigt", "abgelehnt"];
+function istArchiviert(a) { return ARCHIV_STATUS.indexOf(a.status) !== -1; }
+
+// Die Anträge, die die gerade offene Liste zeigt. Eigene Funktion, weil der
 // Sammelexport genau dieselbe Auswahl packen muss wie die Ansicht — zwei
 // getrennte Filter-Ausdrücke wären früher oder später auseinandergelaufen und
 // der Export hätte still etwas anderes geliefert als das, was man vor sich hat.
+// Seit der Aufteilung entscheidet zusätzlich der offene Reiter, welche der
+// beiden Listen gemeint ist.
 function sichtbareAntraege() {
-  return sortierteAntraege().filter(
-    (a) => currentFilter === "alle" || a.status === currentFilter
-  );
+  return aktiveListe === "archiv" ? archivAntraege() : offeneAntraege();
+}
+
+function offeneAntraege() {
+  return sortierteAntraege().filter((a) => !istArchiviert(a))
+    .filter((a) => currentFilter === "alle" || a.status === currentFilter);
+}
+
+function archivAntraege() {
+  return sortierteAntraege().filter(istArchiviert)
+    .filter((a) => archivFilter === "alle" || a.status === archivFilter);
+}
+
+// ⚠️ IMMER beide Listen zeichnen. Ein Statuswechsel lässt einen Antrag von der
+// einen in die andere wandern — wer nur die gerade sichtbare neu rendert, lässt
+// ihn entweder in der alten Liste stehen oder in der neuen fehlen, je nachdem wo
+// man gerade steht. Alle früheren renderUebersicht()-Aufrufe gehen deshalb hier
+// durch.
+function renderListen() {
+  renderUebersicht();
+  renderArchiv();
 }
 
 function renderUebersicht() {
   const rows = el("uebersicht-rows");
   const leer = el("uebersicht-empty");
-  const liste = sichtbareAntraege();
+  const liste = offeneAntraege();
+  const offeneGesamt = appData.antraege.filter((a) => !istArchiviert(a)).length;
   leer.style.display = liste.length ? "none" : "";
-  leer.textContent = appData.antraege.length
+  leer.textContent = offeneGesamt
     ? "Keine Anträge mit diesem Status."
-    : "Noch keine Anträge erfasst.";
+    : (appData.antraege.length
+        ? "Nichts offen — alles Abgeschlossene steht im Archiv."
+        : "Noch keine Anträge erfasst.");
   rows.innerHTML = liste.map(antragRowHtml).join("");
-  aktualisiereExportKnopf(liste.length);
+  aktualisiereExportKnopf("btn-alle-pdfs", liste.length);
+}
+
+function renderArchiv() {
+  const rows = el("archiv-rows");
+  const leer = el("archiv-empty");
+  if (!rows || !leer) return;
+  const liste = archivAntraege();
+  const archivGesamt = appData.antraege.filter(istArchiviert).length;
+  leer.style.display = liste.length ? "none" : "";
+  leer.textContent = archivGesamt
+    ? "Nichts mit diesem Status im Archiv."
+    : "Noch nichts abgeschlossen.";
+  rows.innerHTML = liste.map(antragRowHtml).join("");
+  aktualisiereExportKnopf("btn-alle-pdfs-archiv", liste.length);
+  // Zahl am Reiter: sonst ist nicht zu sehen, dass dort überhaupt etwas liegt.
+  const nav = el("nav-archiv");
+  if (nav) nav.textContent = archivGesamt ? `Archiv (${archivGesamt})` : "Archiv";
 }
 
 // Der Knopf trägt die Anzahl, die er exportieren würde — sonst ist bei gesetztem
 // Status-Filter nicht zu sehen, dass „alle“ hier nur die angezeigten meint.
-function aktualisiereExportKnopf(anzahl) {
-  const btn = el("btn-alle-pdfs");
+function aktualisiereExportKnopf(id, anzahl) {
+  const btn = el(id);
   if (!btn || exportLaeuft) return;
   btn.textContent = `Alle als PDF-ZIP (${anzahl})`;
   btn.disabled = !anzahl;
@@ -582,7 +632,7 @@ function setzeSchreibschutz() {
   // PDF-Erzeugung und ZIP laufen vollständig im Browser über pdf-lib, dort IST
   // dieses Gate die Schranke — die Grenze davor ist die Tool-Sichtbarkeit.
   const darfAusgeben = canAdmin();
-  ["btn-pdf", "btn-mail", "btn-alle-pdfs"].forEach((id) => {
+  ["btn-pdf", "btn-mail", "btn-alle-pdfs", "btn-alle-pdfs-archiv"].forEach((id) => {
     const b = el(id); if (b) b.style.display = darfAusgeben ? "" : "none";
   });
   // Einstellungen (Verteiler der Benachrichtigung) hängen an der dritten Stufe,
@@ -633,7 +683,7 @@ async function meldeFertig() {
     // das nur im Browser existiert, wäre schlimmer als gar keins.
     if (!ok) a.status = vorher;
     fuelleFormular(a);
-    renderUebersicht();
+    renderListen();
   } finally {
     b.disabled = false;
     b.textContent = beschriftung;
@@ -676,6 +726,10 @@ function bindeFormular() {
       pill.textContent = STATUS_LABELS[a.status] || a.status;
       pill.className = "status-pill status-" + a.status;
       zeigeFertigKnopf(a);
+      // ⚠️ Genau hier wandert ein Antrag zwischen Arbeitsliste und Archiv. Ohne
+      // das Neuzeichnen stünde er nach „genehmigt“ weiter unter den offenen und
+      // fehlte im Archiv, bis jemand die Seite neu lädt.
+      renderListen();
       // statusGewechselt() speichert selbst (sofort statt debounced) und meldet
       // danach — deshalb hier KEIN zusätzliches scheduleSave().
       statusGewechselt(a);
@@ -1062,7 +1116,7 @@ function neuerAntrag() {
     if (name) a.leiter.name = name;
   }
   appData.antraege.push(a);
-  renderUebersicht();
+  renderListen();
   oeffneAntrag(a.id);
   scheduleSave();
 }
@@ -1090,7 +1144,7 @@ function kopiereAntrag() {
   kopie.unterschriftFileId = "";
   kopie.unterschriebenAm = "";
   appData.antraege.push(kopie);
-  renderUebersicht();
+  renderListen();
   oeffneAntrag(kopie.id);
   scheduleSave();
 }
@@ -1106,8 +1160,8 @@ function loescheAntrag() {
   appData.antraege = appData.antraege.filter((x) => x.id !== a.id);
   currentAntragId = null;
   el("nav-antrag").style.display = "none";
-  renderUebersicht();
-  switchTab("uebersicht");
+  renderListen();
+  switchTab(aktiveListe);
   flushSave();
   doSave();
 }
@@ -1190,15 +1244,27 @@ async function exportiereAllePdfs() {
   const liste = sichtbareAntraege();
   if (!liste.length) return;
 
-  const filterHinweis = currentFilter === "alle"
+  // Seit der Aufteilung in Arbeitsliste und Archiv packt der Knopf immer nur die
+  // Liste, in der er steht. Beides muss im Hinweis stehen: der gesetzte Filter
+  // UND die andere Liste — sonst hält man das ZIP für „alles“.
+  const imArchiv = aktiveListe === "archiv";
+  const filter = imArchiv ? archivFilter : currentFilter;
+  const andereListe = imArchiv
+    ? appData.antraege.filter((a) => !istArchiviert(a)).length
+    : appData.antraege.filter(istArchiviert).length;
+  const filterHinweis = filter === "alle"
     ? ""
-    : `\n\nDer Status-Filter steht auf „${STATUS_LABELS[currentFilter] || currentFilter}“ — `
-      + `andere Anträge sind nicht dabei (insgesamt erfasst: ${appData.antraege.length}).`;
+    : `\n\nDer Status-Filter steht auf „${STATUS_LABELS[filter] || filter}“ — `
+      + "andere Anträge dieser Liste sind nicht dabei.";
+  const listenHinweis = andereListe
+    ? `\n\n${andereListe} ${andereListe === 1 ? "Antrag" : "Anträge"} `
+      + (imArchiv ? "aus der Arbeitsliste" : "im Archiv") + " sind nicht dabei."
+    : "";
   if (!confirm(`${liste.length} ${liste.length === 1 ? "Antrag" : "Anträge"} als einzelne PDFs `
-    + `in ein ZIP-Archiv packen?${filterHinweis}\n\n`
+    + `in ein ZIP-Archiv packen?${filterHinweis}${listenHinweis}\n\n`
     + "Die Dateien enthalten Anschriften und Telefonnummern der Veranstaltungsleitung.")) return;
 
-  const btn = el("btn-alle-pdfs");
+  const btn = el(imArchiv ? "btn-alle-pdfs-archiv" : "btn-alle-pdfs");
   const originalText = btn.textContent;
   exportLaeuft = true;
   btn.disabled = true;
@@ -1250,7 +1316,7 @@ async function exportiereAllePdfs() {
     btn.textContent = originalText;
     // Der Filter kann sich während des Laufs geändert haben, dann stimmt die
     // Zahl in originalText nicht mehr.
-    aktualisiereExportKnopf(sichtbareAntraege().length);
+    aktualisiereExportKnopf(imArchiv ? "btn-alle-pdfs-archiv" : "btn-alle-pdfs", sichtbareAntraege().length);
   }
 }
 
@@ -1366,7 +1432,10 @@ function switchTab(name) {
   document.querySelectorAll(".tab-section").forEach((s) => {
     s.classList.toggle("active", s.id === "tab-" + name);
   });
+  // Der offene Reiter bestimmt, welche Liste der Sammelexport packt.
+  if (name === "uebersicht" || name === "archiv") aktiveListe = name;
   if (name === "uebersicht") renderUebersicht();
+  if (name === "archiv") renderArchiv();
   if (name === "einstellungen") renderEinstellungen();
   window.scrollTo(0, 0);
 }
@@ -1533,7 +1602,7 @@ async function boot() {
   el("app-shell").style.display = "";
   el("header-user").textContent = aktuellerKlarname() || currentUser.username || "";
 
-  renderUebersicht();
+  renderListen();
   setzeSchreibschutz();
 
   // --- Ereignisse ---
@@ -1542,7 +1611,10 @@ async function boot() {
   });
   el("btn-neuer-antrag").addEventListener("click", neuerAntrag);
   el("btn-alle-pdfs").addEventListener("click", exportiereAllePdfs);
-  el("btn-zurueck").addEventListener("click", () => switchTab("uebersicht"));
+  // Zurück dorthin, wo der Antrag herkam: wer ihn im Archiv angeklickt hat, will
+  // nicht in der Arbeitsliste landen. aktiveListe bleibt beim Öffnen stehen,
+  // weil switchTab("antrag") sie nicht anfasst.
+  el("btn-zurueck").addEventListener("click", () => switchTab(aktiveListe));
   el("btn-pdf").addEventListener("click", erzeugePdf);
   el("btn-mail").addEventListener("click", sendePerMail);
   el("btn-fertig").addEventListener("click", meldeFertig);
@@ -1556,6 +1628,15 @@ async function boot() {
     currentFilter = ev.target.value;
     renderUebersicht();
   });
+  el("archiv-status-filter").addEventListener("change", (ev) => {
+    archivFilter = ev.target.value;
+    renderArchiv();
+  });
+  el("archiv-rows").addEventListener("click", (ev) => {
+    const btn = ev.target.closest("[data-open]");
+    if (btn) oeffneAntrag(btn.dataset.open);
+  });
+  el("btn-alle-pdfs-archiv").addEventListener("click", exportiereAllePdfs);
   el("uebersicht-rows").addEventListener("click", (ev) => {
     const btn = ev.target.closest("[data-open]");
     if (btn) oeffneAntrag(btn.dataset.open);

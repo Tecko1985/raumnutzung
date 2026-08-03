@@ -17,6 +17,15 @@ const APP_CHANGELOG = [
         ]
       },
       {
+        title: "Abgeschlossene Anträge wandern ins Archiv",
+        items: [
+          "Neuer Reiter „Archiv“: sobald der Landkreis genehmigt oder abgelehnt hat, steht der Antrag dort statt in der Arbeitsliste.",
+          "Die Liste „Anträge“ zeigt damit nur noch, was tatsächlich noch etwas von jemandem will — Entwürfe, fertig gemeldete und eingereichte.",
+          "Am Reiter steht, wie viele Anträge im Archiv liegen. Archivierte lassen sich weiter öffnen, ansehen und als PDF ausgeben; gelöscht wird nichts.",
+          "Beide Listen haben einen eigenen Status-Filter und einen eigenen Knopf für den Sammelexport. Der Export packt immer nur die Liste, in der er steht — die Rückfrage sagt vorher, wie viele Anträge der jeweils anderen Liste nicht dabei sind."
+        ]
+      },
+      {
         title: "Wer benachrichtigt wird, ist einstellbar",
         items: [
           "Neuer Reiter „Einstellungen“ (nur mit der Stufe Administrieren) mit der Liste „Wer wird über fertige Anträge benachrichtigt“.",
