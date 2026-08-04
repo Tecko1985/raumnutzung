@@ -2,41 +2,6 @@ const APP_VERSION = "1.0";
 
 const APP_CHANGELOG = [
   {
-    version: "1.1",
-    groups: [
-      {
-        title: "Fertige Anträge melden sich",
-        items: [
-          "Neuer Knopf „Fertig zum Einreichen“ im Antrag: damit sagt der ausfüllende Trainer Bescheid, dass der Antrag fertig ist.",
-          "Wer den Antrag beim Amt einreicht, bekommt darüber eine Nachricht aufs Handy — bisher musste jemand von sich aus in die Liste schauen.",
-          "Den Status selbst setzt ab jetzt nur noch die Geschäftsstelle. Wer einen Antrag ausfüllt, hat genau einen Weg aus dem Entwurf heraus: den Knopf. Das Statusfeld bleibt sichtbar, damit jeder sieht, wo sein Antrag steht.",
-          "„Fertig zum Einreichen“ ist auch ein eigener Status: in der Übersicht ist damit auf einen Blick zu sehen, welche Anträge warten. Man kann danach filtern.",
-          "Umgekehrt bekommt der Trainer eine Nachricht, sobald sein Antrag eingereicht wurde und wenn der Landkreis genehmigt oder ablehnt.",
-          "Die Nachricht nennt kein Ergebnis — sie steht auf dem Sperrbildschirm. Was passiert ist, sieht man nach dem Antippen.",
-          "Eingeschaltet wird das in der Tools-Übersicht unter „Mein Konto“, einzeln für dieses Werkzeug. Wer es nicht einschaltet, merkt keinen Unterschied."
-        ]
-      },
-      {
-        title: "Abgeschlossene Anträge wandern ins Archiv",
-        items: [
-          "Neuer Reiter „Archiv“: sobald der Landkreis genehmigt oder abgelehnt hat, steht der Antrag dort statt in der Arbeitsliste.",
-          "Die Liste „Anträge“ zeigt damit nur noch, was tatsächlich noch etwas von jemandem will — Entwürfe, fertig gemeldete und eingereichte.",
-          "Am Reiter steht, wie viele Anträge im Archiv liegen. Archivierte lassen sich weiter öffnen, ansehen und als PDF ausgeben; gelöscht wird nichts.",
-          "Beide Listen haben einen eigenen Status-Filter und einen eigenen Knopf für den Sammelexport. Der Export packt immer nur die Liste, in der er steht — die Rückfrage sagt vorher, wie viele Anträge der jeweils anderen Liste nicht dabei sind."
-        ]
-      },
-      {
-        title: "Wer benachrichtigt wird, ist einstellbar",
-        items: [
-          "Neuer Reiter „Einstellungen“ (nur mit der Stufe Administrieren) mit der Liste „Wer wird über fertige Anträge benachrichtigt“.",
-          "Zur Auswahl stehen nur Personen, die den Antrag auch einreichen dürfen — ein Haken bei jemand anderem hätte nichts bewirkt.",
-          "Solange nichts angehakt ist, werden alle davon benachrichtigt. Unter der Liste steht, was der aktuelle Stand bedeutet.",
-          "Die Auswahl kann den Kreis nur verkleinern. Wer sein Recht verliert, bekommt automatisch nichts mehr — auch wenn er noch angehakt ist."
-        ]
-      }
-    ]
-  },
-  {
     version: "1.0",
     groups: [
       {
@@ -79,17 +44,41 @@ const APP_CHANGELOG = [
         ]
       },
       {
+        title: "Fertig melden und einreichen",
+        items: [
+          "Der Knopf „Fertig zum Einreichen“ im Antrag ist der Übergabepunkt: damit sagt der ausfüllende Trainer Bescheid, dass der Antrag steht.",
+          "„Fertig zum Einreichen“ ist zugleich ein eigener Status. In der Übersicht ist damit auf einen Blick zu sehen, welche Anträge warten, und man kann danach filtern.",
+          "Den Status selbst setzt nur die Geschäftsstelle. Wer einen Antrag ausfüllt, hat genau einen Weg aus dem Entwurf heraus: den Knopf. Das Statusfeld bleibt sichtbar, damit jeder sieht, wo sein Antrag steht.",
+          "Ohne diese Trennung könnte ein Antrag auf „Eingereicht“ stehen, ohne dass ihn je jemand beim Amt eingereicht hat."
+        ]
+      },
+      {
+        title: "Benachrichtigung aufs Handy",
+        items: [
+          "Meldet jemand einen Antrag als fertig, bekommen die Einreichenden eine Nachricht aufs Handy, statt selbst in die Liste schauen zu müssen.",
+          "Umgekehrt bekommt der ausfüllende Trainer eine Nachricht, sobald sein Antrag eingereicht wurde und wenn der Landkreis genehmigt oder ablehnt.",
+          "Die Nachricht nennt kein Ergebnis — sie steht auf dem Sperrbildschirm. Was passiert ist, sieht man nach dem Antippen.",
+          "Eingeschaltet wird das in der Tools-Übersicht unter „Mein Konto“, einzeln für dieses Werkzeug. Wer es nicht einschaltet, merkt keinen Unterschied.",
+          "Im Reiter „Einstellungen“ lässt sich einstellen, wer über fertige Anträge benachrichtigt wird. Zur Auswahl stehen nur Personen, die den Antrag auch einreichen dürfen — ein Haken bei jemand anderem hätte nichts bewirkt.",
+          "Solange nichts angehakt ist, werden alle Berechtigten benachrichtigt. Unter der Liste steht, was der aktuelle Stand bedeutet. Die Auswahl kann den Kreis nur verkleinern; wer sein Recht verliert, bekommt automatisch nichts mehr."
+        ]
+      },
+      {
         title: "Sammelexport",
         items: [
-          "Über der Antragsliste steht „Alle als PDF-ZIP“: daraus entsteht aus jedem angezeigten Antrag das ausgefüllte Original-PDF, gebündelt in einem Archiv — ein Download statt einer Datei je Antrag.",
+          "Über jeder Antragsliste steht „Alle als PDF-ZIP“: daraus entsteht aus jedem angezeigten Antrag das ausgefüllte Original-PDF, gebündelt in einem Archiv — ein Download statt einer Datei je Antrag.",
           "Exportiert wird genau das, was die Liste gerade zeigt. Steht der Status-Filter auf „Eingereicht“, sind auch nur diese Anträge im Archiv. Der Knopf nennt die Anzahl, und vor dem Start wird nachgefragt.",
+          "Arbeitsliste und Archiv haben je einen eigenen Knopf. Der Export packt immer nur die Liste, in der er steht — die Rückfrage sagt vorher, wie viele Anträge der jeweils anderen Liste nicht dabei sind.",
           "Lässt sich ein einzelner Antrag nicht erzeugen, laufen die übrigen trotzdem durch; die betroffenen werden am Ende aufgelistet."
         ]
       },
       {
-        title: "Übersicht",
+        title: "Übersicht und Archiv",
         items: [
-          "Alle Anträge in einer Liste, sortiert nach Veranstaltungsdatum, mit Status Entwurf, Eingereicht, Genehmigt oder Abgelehnt.",
+          "Die Liste „Anträge“ zeigt, was noch etwas von jemandem will: Entwürfe, fertig gemeldete und eingereichte — sortiert nach Veranstaltungsdatum.",
+          "Sobald der Landkreis genehmigt oder abgelehnt hat, steht der Antrag im Reiter „Archiv“. Am Reiter steht, wie viele Anträge dort liegen.",
+          "Archivierte Anträge lassen sich weiter öffnen, ansehen und als PDF ausgeben; gelöscht wird nichts. Setzt die Geschäftsstelle einen zurück, wandert er wieder in die Arbeitsliste.",
+          "Beide Listen haben einen eigenen Status-Filter.",
           "In der Liste steht die eingetragene Veranstaltungsleitung. Wer den Antrag angelegt hat, steht im Kopf des geöffneten Antrags.",
           "Ein bestehender Antrag lässt sich als Vorlage kopieren — wiederkehrende Veranstaltungen müssen nicht neu erfasst werden."
         ]
@@ -100,7 +89,7 @@ const APP_CHANGELOG = [
           "Das Werkzeug ist auf die berechtigte Gruppe beschränkt, weil das Formular private Anschriften und Telefonnummern enthält.",
           "Sehen: die Antragsliste und die Anträge, schreibgeschützt.",
           "Bearbeiten: Anträge anlegen, ausfüllen, kopieren und unterschreiben.",
-          "Administrieren: alle drei Ausgabewege — das amtliche PDF erzeugen, per E-Mail einreichen und der Sammelexport.",
+          "Administrieren: alle drei Ausgabewege — das amtliche PDF erzeugen, per E-Mail einreichen und der Sammelexport. Dazu der Status eines Antrags und der Reiter „Einstellungen“ mit dem Verteiler für die Benachrichtigungen.",
           "Die Arbeitsteilung dahinter: einen Antrag ausfüllen darf jeder Bearbeiter. Das fertige Formular ans Amt herausgeben ist Sache der Geschäftsstelle. Beschränkt ist das auch auf dem Server, nicht nur am ausgeblendeten Knopf — sonst ließe sich der Sammelexport umgehen, indem man die Anträge einzeln öffnet.",
           "Der Reiter „Info“ ist für alle sichtbar."
         ]
@@ -110,7 +99,7 @@ const APP_CHANGELOG = [
         items: [
           "Die Reiterleiste bricht am Handy um, statt seitlich aus dem Bild zu laufen — auch die hinteren Reiter sind auf schmalen Bildschirmen erreichbar.",
           "Eingabefelder sind mindestens 16 Pixel groß, damit der iPhone-Browser beim Antippen nicht ungefragt in die Seite hineinzoomt und verschoben stehen bleibt.",
-          "Unterschreiben funktioniert auch auf älteren iPhones und iPads. Zuvor reagierte die Fläche dort je nach iOS-Version gar nicht auf den Finger, oder die Unterschrift wurde nie gespeichert — im zweiten Fall speicherte die App danach auch die übrigen Angaben nicht mehr.",
+          "Unterschreiben funktioniert auch auf älteren iPhones und iPads — die Fläche nimmt dort den Finger an, und die Unterschrift wird zuverlässig gespeichert.",
           "Die Auswahl-Lupe von iOS bleibt beim Unterschreiben aus, sodass sie den Strich nicht abreißen lässt."
         ]
       },
