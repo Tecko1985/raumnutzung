@@ -1,50 +1,23 @@
-# Raumnutzung
+# 🏛️ Raumnutzung
 
-Anträge auf Raumnutzung für Veranstaltungen digital erfassen — und daraus das
-ausgefüllte Original-Formular des Landkreises Eichsfeld als PDF erzeugen.
+Anträge auf Raumnutzung für Veranstaltungen (Landkreis Eichsfeld) digital erfassen und daraus das ausgefüllte Original-Formular als PDF für das Liegenschaftsamt erzeugen.
 
-## Was die App macht
+**➡️ [Raumnutzung öffnen](https://sc1911heiligenstadt.github.io/raumnutzung/)**
 
-Wer eine Halle oder Außenanlage des Landkreises für eine Veranstaltung nutzen
-will, füllt das Formular „Raumnutzung für Veranstaltungen“ des
-Liegenschaftsamtes aus — neun Abschnitte von der Bezeichnung der Veranstaltung
-über die erwarteten Teilnehmerzahlen bis zu den Bühnenflächen.
+## Zugang
 
-Diese App nimmt die Angaben in einer normalen Weboberfläche auf, rechnet die
-Teilnehmer-Summe selbst aus und schreibt am Ende alles in das **echte
-Formular-PDF des Landkreises**. Herauskommt genau das Blatt, das das Amt
-erwartet — zum Ausdrucken, Unterschreiben und Einreichen.
+Die Anmeldung läuft über die [Tools-Übersicht](https://sc1911heiligenstadt.github.io/ToolsUebersicht/) — dort einmal anmelden, danach ist dieses Werkzeug offen.
 
-## Bedienung
+Die Rechte gelten in drei Stufen: **Sehen** (nur ansehen), **Bearbeiten** (Einträge pflegen) und **Administrieren** (Einstellungen und Verwaltung). Wer welche Stufe hat, legt die Tools-Übersicht fest.
 
-1. In der [Tools-Übersicht](https://sc1911heiligenstadt.github.io/ToolsUebersicht/)
-   anmelden, dann die Kachel **Raumnutzung** öffnen.
-2. **+ Neuer Antrag** — die Angaben werden laufend automatisch gespeichert.
-3. **📄 Amtliches PDF erzeugen** — das ausgefüllte Formular wird
-   heruntergeladen und in einem neuen Tab geöffnet.
-4. Ausdrucken, von der Veranstaltungsleitung unterschreiben lassen, einreichen.
+## Lokal starten
 
-Ein bestehender Antrag lässt sich über **Als Vorlage kopieren** wiederverwenden;
-die Termine werden dabei bewusst geleert, damit kein altes Datum unbemerkt
-mitwandert.
-
-## Hinweise
-
-- Die Unterschriftsfelder bleiben im PDF leer — sie werden auf dem Ausdruck
-  geleistet, so verlangt es das Formular.
-- Das erzeugte PDF bleibt ausfüllbar. Fragt das Amt nach, lässt sich eine
-  Kleinigkeit direkt im PDF-Programm ändern.
-- Die Anträge enthalten private Anschriften und Telefonnummern. Die App ist
-  deshalb nur für einen begrenzten Kreis sichtbar; wer sie sehen und bearbeiten
-  darf, steuert die Tools-Übersicht über die normalen Gruppen.
+Über den Eintrag `raumnutzung` in `E:\.claude\launch.json` — der Server läuft dann auf `http://localhost:8802/`.
 
 ## Technik
 
-Vanilla JS ohne Build-Step. Anmeldung und Speicherung laufen über das zentrale
-Gateway der Tools-Übersicht, die Daten liegen in der Vereins-Nextcloud. Das PDF
-wird im Browser mit [pdf-lib](https://pdf-lib.js.org/) erzeugt.
+Vanilla JavaScript ohne Build-Schritt — die Dateien werden so ausgeliefert, wie sie im Repo liegen. Veröffentlicht über GitHub Pages. Die Daten liegen in der Vereins-Nextcloud; der Zugriff läuft ausschließlich über den Login-Worker der Tools-Übersicht, nie mit Zugangsdaten im Browser.
 
-Entwicklungsserver: Port 8802.
+---
 
-Details zu Architektur, Datenschema und den Fallstricken des Formulars stehen in
-`CLAUDE.md` (nicht Teil des öffentlichen Repos).
+Ein Werkzeug des 1. SC 1911 Heiligenstadt. Alle Werkzeuge auf einen Blick: [Tools-Übersicht](https://sc1911heiligenstadt.github.io/ToolsUebersicht/) · Erklärungen im [Toolbox Wiki](https://sc1911heiligenstadt.github.io/Vereinswiki/).
